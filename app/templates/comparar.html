@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block contenido %}
+<section class="card">
+  <h2>Ciudad contra ciudad</h2>
+  <div class="controles"><div id="chips" class="chips"></div>
+    <label>Vista <select id="agg"><option value="anual">Anual</option><option value="mensual">Mensual</option></select></label></div>
+  <canvas id="comparar" height="110"></canvas>
+</section>
+<section class="card">
+  <h2>Estacionalidad (mes × año) <select id="hmCiudad"></select></h2>
+  <div id="heatmap" class="scroll"></div>
+</section>
+{% endblock %}

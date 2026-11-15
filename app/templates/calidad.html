@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block contenido %}
+<section class="card">
+  <h2>Meses sin dato por ciudad y año</h2>
+  <p class="nota">Cada celda cuenta los meses con «n.d.» o vacíos. Sucre solo tiene totales anuales antes de 2015.</p>
+  <div id="faltantes" class="scroll"></div>
+</section>
+<section class="card">
+  <h2>Sucre con datos estimados</h2>
+  <p class="nota">Los puntos naranjas son meses estimados: el total anual restante se reparte con la estacionalidad de los años completos.</p>
+  <canvas id="imputacion" height="100"></canvas>
+</section>
+{% endblock %}

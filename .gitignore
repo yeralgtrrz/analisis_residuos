@@ -1,0 +1,5 @@
+__pycache__/
+.venv/
+*.pyc
+tools/_bol_adm1.geojson
+

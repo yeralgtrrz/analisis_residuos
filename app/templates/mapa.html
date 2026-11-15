@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block contenido %}
+<section class="card"><div class="controles"><label>Año <select id="anio"></select></label>
+<span class="nota">El tamaño de cada círculo es proporcional a las toneladas recolectadas.</span></div>
+<svg id="mapa" viewBox="0 0 520 560" role="img" aria-label="Mapa de Bolivia con las toneladas recolectadas por ciudad"></svg>
+<div id="leyenda-mapa" class="leyenda" aria-hidden="true"></div></section>
+{% endblock %}

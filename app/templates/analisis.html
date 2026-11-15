@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block contenido %}
+<section class="card"><div class="controles"><label>Ciudad <select id="ciudad"></select></label>
+<a id="reporteLink" href="#">Reporte imprimible</a></div>
+<h2>Tendencia y estacionalidad</h2><canvas id="descomp" height="110"></canvas>
+<h2>Meses atípicos</h2><div id="anomalias" class="scroll"></div></section>
+<section class="card"><h2>Correlación entre ciudades</h2>
+<p class="nota">Correlación de los cambios mensuales: cerca de 1 significa que suben y bajan juntas.</p>
+<div id="corr" class="scroll"></div></section>
+{% endblock %}

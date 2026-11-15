@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block contenido %}
+<section id="kpis" class="kpis"></section>
+<section class="card">
+  <div class="controles">
+    <label>Ciudad <select id="ciudad"></select></label>
+    <label>Desde <select id="desde"></select></label>
+    <label>Hasta <select id="hasta"></select></label>
+    <label>Vista <select id="agg"><option value="mensual">Mensual</option><option value="anual">Anual</option></select></label>
+  </div>
+  <canvas id="serie" height="110"></canvas>
+  <p class="nota">2020 (COVID-19) cambió el patrón de recolección en varias ciudades.</p>
+</section>
+<div class="dos">
+  <section class="card"><h2>Ranking de ciudades <select id="anioRank"></select></h2><canvas id="ranking"></canvas></section>
+  <section class="card"><h2>Residuos por procedencia</h2><canvas id="composicion"></canvas></section>
+</div>
+{% endblock %}

@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block contenido %}
+<section class="card"><h2>¿Cuántas toneladas se ahorran?</h2>
+<p class="nota">Parte del último año disponible a nivel nacional. Mueve cada control para simular una reducción.</p>
+<div id="sliders" class="sliders"></div>
+<label>Capacidad de un camión (t) <input id="camion" type="number" value="10" min="1" style="width:5rem"></label>
+<div id="resultado" class="kpis"></div></section>
+{% endblock %}

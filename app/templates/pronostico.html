@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block contenido %}
+<section class="card">
+  <div class="controles">
+    <label>Ciudad <select id="ciudad"></select></label>
+    <label>Meses a proyectar <select id="meses"><option>6</option><option selected>12</option><option>24</option></select></label>
+    <span id="metodo" class="nota"></span>
+  </div>
+  <canvas id="pronostico" height="110"></canvas>
+  <p class="nota">La banda es un intervalo aproximado del 95 %. Es una proyección estadística, no una garantía.</p>
+</section>
+{% endblock %}

@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Residuos de Bolivia · {{ actual|capitalize }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body data-page="{{ actual }}" data-ciudad="{{ ciudad|default('') }}">
+  <header>
+    <h1>Residuos sólidos de Bolivia</h1>
+    <nav>{% for id, url, nombre in paginas %}
+      <a href="{{ url }}" {% if id == actual %}aria-current="page"{% endif %}>{{ nombre }}</a>{% endfor %}
+    </nav>
+    <span class="descargas">Datos:
+      <a href="/api/descargar/ciudades.csv">CSV</a> <a href="/api/descargar/ciudades.xlsx">Excel</a>
+    </span>
+  </header>
+  <main>{% block contenido %}{% endblock %}</main>
+  <footer>Fuente: INE y Gobiernos Autónomos Municipales. Toneladas recolectadas; (p) = preliminar.</footer>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
