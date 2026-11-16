@@ -30,23 +30,33 @@ residuos-bolivia/
 ├── app/
 │   ├── __init__.py         create_app(): registra las rutas
 │   ├── routes/
-│   │   ├── pages.py        Páginas HTML (Panel, Comparar, Pronóstico, Mapa, Por tipo, Análisis, Simulador, Calidad, Aprende, Reporte)
+│   │   ├── pages.py        Páginas HTML, subida de Excel y reporte
 │   │   └── api.py          API JSON /api/* y descarga CSV/Excel
 │   ├── services/
-│   │   ├── data_loader.py  Lee los Excel (salta logos y notas, "n.d." → NaN) y los pasa a formato largo
-│   │   └── analytics.py    KPIs, ranking, heatmap, faltantes, imputación de Sucre y pronóstico
+│   │   ├── data_loader.py  Lee los Excel, normaliza y elimina duplicados
+│   │   ├── analytics.py    KPIs, completitud, imputación, backtesting y anomalías
+│   │   └── asistente.py    Asistente local (y opcional con OPENAI_API_KEY)
 │   ├── templates/
-│   │   ├── base.html       Cabecera, menú y pie comunes
+│   │   ├── base.html       Cabecera, menú, tema y pie comunes
 │   │   ├── panel.html      KPIs, serie de tiempo, ranking, composición por tipo
 │   │   ├── comparar.html   Ciudad vs. ciudad y heatmap mes × año
-│   │   ├── pronostico.html Proyección con banda de confianza
-│   │   └── calidad.html    Mapa de faltantes y Sucre con datos estimados
+│   │   ├── pronostico.html Proyección con backtesting y banda de error real
+│   │   ├── calidad.html    Mapa de faltantes y datos estimados por ciudad
+│   │   ├── asistente.html  Preguntas en lenguaje natural
+│   │   └── admin.html      Subida y validación de nuevos Excel
 │   └── static/
-│       ├── css/styles.css  Estilos
+│       ├── css/styles.css  Estilos (tema claro/oscuro y estilos de impresión)
 │       └── js/app.js       Lógica de cada página (fetch a la API + Chart.js)
 └── tests/
-    └── test_app.py         Verifica la lectura de datos y que cada endpoint responda
+    └── test_app.py         Lectura, completitud, pronóstico y endpoints
 ```
+
+## Criterios de datos
+
+- **Duplicados**: se eliminan las filas repetidas al cargar. El dataset de tipos traía 72 claves `(fecha, tipo)` repetidas en 2021; sumarlas duplicaba ese año.
+- **Años incompletos**: los agregados anuales excluyen años con menos de 12 meses de dato (2026 llega hasta junio). La vista mensual sí los muestra y la página Calidad lo explica.
+- **Nulos**: criterio único. El tramo inicial sin registro se recorta (Sucre empieza en 2015) y los vacíos interiores se rellenan con interpolación lineal entre meses vecinos. El pronóstico y el análisis usan esa misma serie; el toggle «Datos imputados» permite ver la serie cruda o la estimada.
+- **Pronóstico**: se reservan los últimos 12 meses y se comparan Holt-Winters, SARIMA y regresión lineal estacional con MAE/MAPE. Se elige el de menor MAE y la banda se calcula con el error del backtesting, no con los residuos del ajuste.
 
 ## Qué incluye
 
@@ -54,36 +64,54 @@ residuos-bolivia/
 |---|---|
 | Panel | KPIs del último año completo, serie mensual/anual filtrable por ciudad y años, ranking de ciudades, composición por tipo de procedencia |
 | Comparar | Varias ciudades a la vez y heatmap de estacionalidad (mes × año) |
-| Pronóstico | Holt-Winters (o tendencia + estacionalidad si no hay statsmodels) a 6, 12 o 24 meses |
+| Pronóstico | Backtesting de Holt-Winters, SARIMA y regresión lineal; métricas MAE/MAPE y banda de confianza fuera de muestra |
 | Mapa | Mapa de Bolivia con departamentos y burbujas por ciudad, con selector de año |
 | Por tipo | Evolución y composición por tipo de procedencia de cada ciudad |
 | Análisis | Descomposición tendencia/estacionalidad, meses atípicos y correlación entre ciudades |
 | Simulador | Ahorro en toneladas y camiones según el % de reducción por tipo |
 | Aprende | Guía de separación de residuos |
-| Reporte | `/reporte/<ciudad>` con KPIs, series y pronóstico, listo para imprimir o guardar en PDF |
-| Calidad de datos | Meses sin dato por ciudad/año e imputación de Sucre: total anual restante repartido con la estacionalidad de los años completos |
+| Asistente | Preguntas en lenguaje natural sobre los datos (local; opcionalmente con OpenAI) |
+| Reporte | `/reporte/<ciudad>` con KPIs, series y pronóstico; botón «Descargar PDF» (usá Guardar como PDF del navegador) |
+| Calidad de datos | Meses sin dato por ciudad/año y datos estimados por ciudad con el criterio único de imputación |
+| Datos | Subida de nuevos Excel con clave de administración, validación y respaldo automático |
+| Modo oscuro | Botón ◐ en la cabecera; respeta `prefers-color-scheme` y recuerda la elección |
 
 ## Endpoints de la API
 
 | Ruta | Para qué |
 |---|---|
-| `/api/meta` | Ciudades, tipos y años disponibles |
+| `/api/meta` | Ciudades, tipos, años y años completos |
 | `/api/kpis` | Indicadores del último año completo |
-| `/api/serie?cats=La Paz,El Alto&desde=2010&hasta=2025&agg=anual` | Series de tiempo |
-| `/api/ranking?anio=2024` | Toneladas por ciudad |
-| `/api/composicion` | Toneladas por tipo de procedencia y año |
-| `/api/heatmap?cat=La Paz` | Matriz mes × año |
-| `/api/pronostico?cat=Total&meses=12` | Proyección |
+| `/api/serie?cats=La Paz,El Alto&desde=2010&hasta=2025&agg=anual&imputado=1` | Series de tiempo (crudas o imputadas) |
+| `/api/ranking?anio=2024` | Toneladas por ciudad (incluye si el año es parcial) |
+| `/api/composicion` | Toneladas por tipo de procedencia y año (excluye años incompletos) |
+| `/api/heatmap?cat=La Paz&imputado=1` | Matriz mes × año |
+| `/api/pronostico?cat=Total&meses=12` | Backtesting, métricas y proyección |
 | `/api/mapa?anio=2025` | Departamento y burbujas del mapa |
-| `/api/ciudad-tipo?ciudad=La Paz` | Ciudad × tipo, anual |
-| `/api/anomalias?cat=Total` | Descomposición y meses atípicos |
+| `/api/ciudad-tipo?ciudad=La Paz&imputado=1` | Ciudad × tipo, anual |
+| `/api/anomalias?cat=Total` | Descomposición, meses atípicos y serie cruda |
 | `/api/correlacion` | Matriz de correlación entre ciudades |
 | `/api/faltantes` | Meses sin dato por ciudad/año |
-| `/api/imputacion?ciudad=Sucre` | Serie de Sucre con datos estimados |
+| `/api/imputacion?ciudad=Sucre` | Serie estimada, recorte y cantidad de meses imputados |
+| `POST /api/asistente` | `{"pregunta": "..."}` → respuesta en lenguaje natural |
 | `/api/descargar/<ciudades\|tipos\|ciudad_tipo>.<csv\|xlsx>` | Descarga de datos limpios |
+
+## Variables de entorno
+
+| Variable | Para qué |
+|---|---|
+| `ADMIN_PASSWORD` | Habilita la subida de Excel en `/admin`. Sin ella, la subida queda deshabilitada. |
+| `OPENAI_API_KEY` | Opcional: redacta las respuestas del asistente con un LLM. |
+| `OPENAI_MODEL` | Opcional: modelo a usar (por defecto `gpt-4o-mini`). |
+
+```powershell
+$env:ADMIN_PASSWORD = "una-clave-larga"
+$env:OPENAI_API_KEY = "sk-..."   # opcional
+python run.py
+```
 
 ## Para ampliarla (ideas pendientes)
 
-- Subida de nuevos Excel desde un panel de administración
-- Asistente con IA que responda preguntas sobre los datos
-- Modo oscuro
+- Autenticación de usuarios y roles
+- Comparar contra población o generación per cápita
+- Despliegue con Docker y actualización programada de los datos

@@ -9,6 +9,8 @@ function dibujar(id, config) {
 }
 const opciones = (arr, sel) => arr.map((v) => `<option ${v == sel ? "selected" : ""}>${v}</option>`).join("");
 const ejes = { y: { ticks: { callback: (v) => fmt(v) } } };
+const imputadoOn = () => !!document.querySelector(".imputado")?.checked;
+const qImp = () => (imputadoOn() ? "&imputado=1" : "");
 
 const paginas = {
   async panel() {
@@ -22,11 +24,12 @@ const paginas = {
     ].map(([a, b]) => `<div class="kpi"><b>${a}</b><span>${b}</span></div>`).join("");
     $("#ciudad").innerHTML = opciones(["Total", ...meta.ciudades]);
     $("#desde").innerHTML = opciones(meta.anios, 2005);
-    $("#hasta").innerHTML = opciones(meta.anios, meta.anios.at(-1));
-    $("#anioRank").innerHTML = opciones(meta.anios, k.anio);
+    $("#hasta").innerHTML = opciones(meta.anios, meta.anio_ultimo_completo || meta.anios.at(-1));
+    $("#anioRank").innerHTML = opciones(meta.anios_completos || meta.anios, k.anio);
     const serie = async () => {
-      const [s] = await get(`/api/serie?cats=${$("#ciudad").value}&desde=${$("#desde").value}&hasta=${$("#hasta").value}&agg=${$("#agg").value}`);
-      dibujar("serie", { type: "line", data: { labels: s.x, datasets: [{ label: s.nombre + " (t)", data: s.y, borderColor: COLORES[0], pointRadius: 0, tension: .2 }] }, options: { scales: ejes } });
+      const [s] = await get(`/api/serie?cats=${$("#ciudad").value}&desde=${$("#desde").value}&hasta=${$("#hasta").value}&agg=${$("#agg").value}${qImp()}`);
+      dibujar("serie", { type: "line", data: { labels: s.x, datasets: [{ label: s.nombre + " (t)", data: s.y, borderColor: COLORES[0], pointRadius: 0, tension: .2, spanGaps: imputadoOn() }] }, options: { scales: ejes } });
+      $("#omitidos").textContent = s.omitidos?.length ? `Años omitidos por tener menos de 12 meses: ${s.omitidos.join(", ")}.` : "";
     };
     const rank = async () => {
       const r = await get("/api/ranking?anio=" + $("#anioRank").value);
@@ -44,13 +47,14 @@ const paginas = {
     const comparar = async () => {
       const cats = [...document.querySelectorAll("#chips input:checked")].map((i) => i.value);
       if (!cats.length) return;
-      const data = await get(`/api/serie?cats=${cats.join(",")}&agg=${$("#agg").value}`);
-      dibujar("comparar", { type: "line", data: { labels: data[0].x, datasets: data.map((s, i) => ({ label: s.nombre, data: s.y, borderColor: COLORES[i % 10], pointRadius: 0 })) }, options: { scales: ejes } });
+      const data = await get(`/api/serie?cats=${cats.join(",")}&agg=${$("#agg").value}${qImp()}`);
+      const orden = alinear(data);
+      dibujar("comparar", { type: "line", data: { labels: orden.x, datasets: orden.series.map((s, i) => ({ label: s.nombre, data: s.y, borderColor: COLORES[i % 10], pointRadius: 0, spanGaps: imputadoOn() })) }, options: { scales: ejes } });
     };
     $("#chips").addEventListener("change", comparar); $("#agg").addEventListener("change", comparar);
     $("#hmCiudad").innerHTML = opciones(["Total", ...meta.ciudades]);
     const hm = async () => {
-      const h = await get("/api/heatmap?cat=" + $("#hmCiudad").value);
+      const h = await get("/api/heatmap?cat=" + $("#hmCiudad").value + qImp());
       const v = h.valores.flat().filter((x) => x != null), mn = Math.min(...v), mx = Math.max(...v);
       const celda = (x) => x == null ? "<td></td>" : `<td style="background:rgba(15,92,110,${(.1 + .8 * (x - mn) / (mx - mn)).toFixed(2)});color:${(x - mn) / (mx - mn) > .55 ? "#fff" : "#14232b"}">${fmt(x)}</td>`;
       $("#heatmap").innerHTML = `<table class="hm"><tr><th></th>${h.meses.map((m) => `<th>${m}</th>`).join("")}</tr>` + h.anios.map((a, i) => `<tr><th>${a}</th>${h.valores[i].map(celda).join("")}</tr>`).join("") + "</table>";
@@ -64,10 +68,14 @@ const paginas = {
     const run = async () => {
       $("#metodo").textContent = "Calculando…";
       const p = await get(`/api/pronostico?cat=${$("#ciudad").value}&meses=${$("#meses").value}`);
-      $("#metodo").textContent = "Método: " + p.metodo;
-      const pad = new Array(p.hist.x.length).fill(null);
-      dibujar("pronostico", { type: "line", data: { labels: [...p.hist.x, ...p.pred.x], datasets: [
-        { label: "Histórico", data: [...p.hist.y, ...new Array(p.pred.x.length).fill(null)], borderColor: COLORES[0], pointRadius: 0 },
+      $("#metodo").textContent = "Modelo elegido: " + p.metodo + " (menor MAE)";
+      $("#modelos").innerHTML = `<table class="hm"><tr><th>Modelo</th><th>MAE (t)</th><th>MAPE (%)</th></tr>` +
+        p.modelos.map((m) => `<tr><th>${m.modelo}${m.modelo === p.metodo ? " ✓" : ""}</th><td>${fmt(m.mae)}</td><td>${m.mape}</td></tr>`).join("") +
+        `</table><p class="nota">Backtesting sobre ${p.backtest.x.length} meses reservados.</p>`;
+      const h = imputadoOn() ? p.hist : p.hist_crudo;
+      const pad = new Array(h.x.length).fill(null);
+      dibujar("pronostico", { type: "line", data: { labels: [...h.x, ...p.pred.x], datasets: [
+        { label: "Histórico", data: [...h.y, ...new Array(p.pred.x.length).fill(null)], borderColor: COLORES[0], pointRadius: 0, spanGaps: imputadoOn() },
         { label: "Pronóstico", data: [...pad, ...p.pred.y], borderColor: COLORES[1], borderDash: [6, 4], pointRadius: 0 },
         { label: "Mínimo", data: [...pad, ...p.pred.min], borderColor: "#e0a52666", pointRadius: 0, fill: "+1", backgroundColor: "#e0a52622" },
         { label: "Máximo", data: [...pad, ...p.pred.max], borderColor: "#e0a52666", pointRadius: 0 }] }, options: { scales: ejes } });
@@ -76,22 +84,38 @@ const paginas = {
     run();
   },
   async calidad() {
+    const meta = await get("/api/meta");
+    $("#ciudadImp").innerHTML = opciones(meta.ciudades, "Sucre");
     const f = await get("/api/faltantes");
-    const celda = (x) => `<td style="background:${x ? `rgba(180,69,47,${.2 + x / 12 * .8})` : "#e6efe9"};color:${x > 6 ? "#fff" : "#14232b"}">${x || ""}</td>`;
+    const celda = (x) => `<td style="background:${x ? `rgba(180,69,47,${.2 + x / 12 * .8})` : "var(--mapa)"};color:${x > 6 ? "#fff" : "var(--tinta)"}">${x || ""}</td>`;
     $("#faltantes").innerHTML = `<table class="hm"><tr><th></th>${f.anios.map((a) => `<th>${a}</th>`).join("")}</tr>` + f.ciudades.map((c, i) => `<tr><th>${c}</th>${f.valores[i].map(celda).join("")}</tr>`).join("") + "</table>";
-    const s = await get("/api/imputacion?ciudad=Sucre");
-    dibujar("imputacion", { type: "line", data: { labels: s.x, datasets: [
-      { label: "Sucre (t)", data: s.y, borderColor: COLORES[0], pointRadius: 0 },
-      { label: "Estimado", data: s.y.map((v, i) => s.estimado[i] ? v : null), borderColor: COLORES[1], pointBackgroundColor: COLORES[1], pointRadius: 3, showLine: false }] }, options: { scales: ejes } });
+    const dibujarImp = async () => {
+      const ciudad = $("#ciudadImp").value;
+      const s = await get("/api/imputacion?ciudad=" + ciudad);
+      $("#detalleImp").textContent = `Recorte: ${s.recortado_desde || "sin recorte"} · ${s.n_estimados} meses estimados con ${s.metodo}.`;
+      dibujar("imputacion", { type: "line", data: { labels: s.x, datasets: [
+        { label: ciudad + " (t)", data: s.y, borderColor: COLORES[0], pointRadius: 0, spanGaps: true },
+        { label: "Estimado", data: s.y.map((v, i) => s.estimado[i] ? v : null), borderColor: COLORES[1], pointBackgroundColor: COLORES[1], pointRadius: 3, showLine: false }] }, options: { scales: ejes } });
+    };
+    $("#ciudadImp").addEventListener("change", dibujarImp);
+    dibujarImp();
   },
 };
 const tabla = (cols, filas, color) => `<table class="hm"><tr><th></th>${cols.map((c) => `<th>${c}</th>`).join("")}</tr>` + filas.map(([n, v]) => `<tr><th>${n}</th>${v.map(color).join("")}</tr>`).join("") + "</table>";
+const alinear = (datos) => {
+  const x = [...new Set(datos.flatMap((d) => d.x))].sort();
+  const series = datos.map((d) => {
+    const m = new Map(d.x.map((v, j) => [v, d.y[j]]));
+    return { nombre: d.nombre, y: x.map((v) => (m.has(v) ? m.get(v) : null)) };
+  });
+  return { x, series };
+};
 const llenarCiudades = async (id = "ciudad", def = "Total") => { const m = await get("/api/meta"); $("#" + id).innerHTML = opciones([def, ...m.ciudades]); return m; };
 
 Object.assign(paginas, {
   async mapa() {
     const [m, geo] = await Promise.all([get("/api/meta"), get("/static/data/bolivia.json")]);
-    $("#anio").innerHTML = opciones(m.anios, 2025);
+    $("#anio").innerHTML = opciones(m.anios_completos || m.anios, m.anio_ultimo_completo || 2025);
 
     const W = 520, H = 560, pad = 18;
     const [minLon, minLat, maxLon, maxLat] = geo.bbox;
@@ -125,8 +149,12 @@ Object.assign(paginas, {
   async tipos() {
     await llenarCiudades("ciudad", "La Paz");
     const run = async () => {
-      const d = await get("/api/ciudad-tipo?ciudad=" + $("#ciudad").value), n = Object.keys(d.series);
-      dibujar("evolucion", { type: "line", data: { labels: d.anios, datasets: n.map((k, i) => ({ label: k, data: d.series[k], borderColor: COLORES[i], pointRadius: 2 })) }, options: { scales: ejes } });
+      const d = await get(`/api/ciudad-tipo?ciudad=${$("#ciudad").value}${qImp()}`), n = Object.keys(d.series);
+      const base = n.map((k, i) => ({ label: k, data: d.series[k], borderColor: COLORES[i], pointRadius: 2 }));
+      const estimados = imputadoOn() && d.estimado
+        ? n.map((k, i) => ({ label: k + " (estimado)", data: d.series[k].map((v, j) => d.estimado[k][j] ? v : null), borderColor: COLORES[i], pointBackgroundColor: COLORES[i], pointRadius: 4, showLine: false }))
+        : [];
+      dibujar("evolucion", { type: "line", data: { labels: d.anios, datasets: [...base, ...estimados] }, options: { scales: ejes } });
       const ult = d.anios.length - 1;
       dibujar("torta", { type: "doughnut", data: { labels: n, datasets: [{ data: n.map((k) => d.series[k][ult] || 0), backgroundColor: COLORES }] } });
     };
@@ -137,11 +165,12 @@ Object.assign(paginas, {
     const run = async () => {
       const c = $("#ciudad").value, a = await get("/api/anomalias?cat=" + c);
       $("#reporteLink").href = "/reporte/" + c;
+      const serie = imputadoOn() ? a.y : a.y_crudo;
       const flag = a.x.map((m) => a.anomalias.find((z) => z.mes == m));
       dibujar("descomp", { type: "line", data: { labels: a.x, datasets: [
-        { label: "Real", data: a.y, borderColor: COLORES[0], pointRadius: 0 },
+        { label: "Real", data: serie, borderColor: COLORES[0], pointRadius: 0, spanGaps: imputadoOn() },
         { label: "Tendencia", data: a.tendencia, borderColor: COLORES[1], pointRadius: 0 },
-        { label: "Atípico", data: a.y.map((v, i) => flag[i] ? v : null), borderColor: COLORES[2], backgroundColor: COLORES[2], pointRadius: 5, showLine: false }] }, options: { scales: ejes } });
+        { label: "Atípico", data: serie.map((v, i) => flag[i] ? v : null), borderColor: COLORES[2], backgroundColor: COLORES[2], pointRadius: 5, showLine: false }] }, options: { scales: ejes } });
       $("#anomalias").innerHTML = a.anomalias.length ? `<table class="hm"><tr><th>Mes</th><th>Toneladas</th><th>Desvíos</th></tr>${a.anomalias.map((z) => `<tr><th>${z.mes}</th><td>${fmt(z.ton)}</td><td>${z.z}</td></tr>`).join("")}</table>` : "<p class='nota'>Sin meses atípicos.</p>";
     };
     $("#ciudad").addEventListener("change", run); run();
@@ -159,16 +188,67 @@ Object.assign(paginas, {
     };
     $("#sliders").addEventListener("input", calc); $("#camion").addEventListener("input", calc); calc();
   },
+  async asistente() {
+    const charla = $("#charla");
+    const add = (texto, clase) => {
+      const p = document.createElement("p");
+      p.className = "burbuja " + clase;
+      p.textContent = texto;
+      charla.appendChild(p);
+      charla.scrollTop = charla.scrollHeight;
+    };
+    const preguntar = async () => {
+      const q = $("#pregunta").value.trim();
+      if (!q) return;
+      add(q, "yo");
+      $("#pregunta").value = "";
+      $("#pregunta").disabled = true;
+      try {
+        const r = await fetch("/api/asistente", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pregunta: q }) }).then((x) => x.json());
+        add(r.respuesta, "ia");
+      } catch (e) {
+        add("No pude responder en este momento.", "ia");
+      } finally {
+        $("#pregunta").disabled = false;
+        $("#pregunta").focus();
+      }
+    };
+    $("#enviar").addEventListener("click", preguntar);
+    $("#pregunta").addEventListener("keydown", (e) => { if (e.key === "Enter") preguntar(); });
+  },
   async reporte() {
     const c = decodeURIComponent(document.body.dataset.ciudad);
     $("#titulo").textContent = "Reporte: " + c;
+    $("#pdf").addEventListener("click", () => window.print());
     const [[s], p] = await Promise.all([get(`/api/serie?cats=${c}&agg=anual`), get(`/api/pronostico?cat=${c}&meses=12`)]);
-    const y = s.y.filter((_, i) => i < s.y.length - 1), ult = y.at(-1), prev = y.at(-2);
-    $("#kpisC").innerHTML = [[fmt(ult) + " t", "Último año completo"], [((ult / prev - 1) * 100).toFixed(1) + " %", "Variación anual"], [fmt(Math.max(...y)) + " t", "Máximo histórico"]].map(([a, b]) => `<div class="kpi"><b>${a}</b><span>${b}</span></div>`).join("");
+    const ult = s.y.at(-1), prev = s.y.at(-2), imax = s.y.indexOf(Math.max(...s.y));
+    $("#kpisC").innerHTML = [
+      [fmt(ult) + " t", `Recolectado en ${s.x.at(-1)}`],
+      [((ult / prev - 1) * 100).toFixed(1) + " %", `Variación vs ${s.x.at(-2)}`],
+      [fmt(Math.max(...s.y)) + " t", `Máximo histórico (${s.x[imax]})`],
+    ].map(([a, b]) => `<div class="kpi"><b>${a}</b><span>${b}</span></div>`).join("");
     dibujar("rSerie", { type: "bar", data: { labels: s.x, datasets: [{ label: c + " (t)", data: s.y, backgroundColor: COLORES[0] }] }, options: { scales: ejes } });
     if (c !== "Total") { const d = await get("/api/ciudad-tipo?ciudad=" + c), n = Object.keys(d.series);
       dibujar("rTipos", { type: "bar", data: { labels: d.anios, datasets: n.map((k, i) => ({ label: k, data: d.series[k], backgroundColor: COLORES[i] })) }, options: { scales: { x: { stacked: true }, y: { stacked: true } } } }); }
-    dibujar("rPron", { type: "line", data: { labels: [...p.hist.x.slice(-24), ...p.pred.x], datasets: [{ label: "Histórico", data: [...p.hist.y.slice(-24), ...new Array(p.pred.x.length).fill(null)], borderColor: COLORES[0], pointRadius: 0 }, { label: "Pronóstico", data: [...new Array(24).fill(null), ...p.pred.y], borderColor: COLORES[1], borderDash: [6, 4], pointRadius: 0 }] } });
+    dibujar("rPron", { type: "line", data: { labels: [...p.hist.x.slice(-24), ...p.pred.x], datasets: [{ label: "Histórico", data: [...p.hist.y.slice(-24), ...new Array(p.pred.x.length).fill(null)], borderColor: COLORES[0], pointRadius: 0 }, { label: "Pronóstico", data: [...new Array(Math.min(24, p.hist.y.length)).fill(null), ...p.pred.y], borderColor: COLORES[1], borderDash: [6, 4], pointRadius: 0 }] } });
   },
 });
+
+document.querySelectorAll(".imputado").forEach((cb) => {
+  cb.checked = localStorage.getItem("imputado") === "1";
+  cb.addEventListener("change", () => { localStorage.setItem("imputado", cb.checked ? "1" : "0"); location.reload(); });
+});
+
+const tema = localStorage.getItem("tema") || (matchMedia("(prefers-color-scheme: dark)").matches ? "oscuro" : "claro");
+document.documentElement.dataset.tema = tema;
+document.querySelector("#tema")?.addEventListener("click", () => {
+  localStorage.setItem("tema", document.documentElement.dataset.tema === "oscuro" ? "claro" : "oscuro");
+  location.reload();
+});
+try {
+  const cs = getComputedStyle(document.documentElement);
+  Chart.defaults.color = cs.getPropertyValue("--tinta").trim();
+  Chart.defaults.borderColor = cs.getPropertyValue("--borde").trim();
+} catch (e) { /* Chart aún no cargado */ }
+
 paginas[document.body.dataset.page]?.();

@@ -2,12 +2,14 @@
 {% block contenido %}
 <section class="card">
   <h2>Meses sin dato por ciudad y año</h2>
-  <p class="nota">Cada celda cuenta los meses con «n.d.» o vacíos. Sucre solo tiene totales anuales antes de 2015.</p>
+  <p class="nota">Cada celda cuenta los meses con «n.d.» o vacíos. Sucre solo tiene registro desde 2015; 2026 llega hasta junio en todos los casos.</p>
   <div id="faltantes" class="scroll"></div>
 </section>
 <section class="card">
-  <h2>Sucre con datos estimados</h2>
-  <p class="nota">Los puntos naranjas son meses estimados: el total anual restante se reparte con la estacionalidad de los años completos.</p>
+  <h2>Datos estimados por ciudad</h2>
+  <p class="nota">Criterio único: el tramo inicial sin registro se recorta (Sucre empieza en 2015) y los vacíos interiores se rellenan con interpolación lineal entre meses vecinos. El pronóstico y el análisis usan esta misma serie.</p>
+  <div class="controles"><label>Ciudad <select id="ciudadImp"></select></label>
+    <span id="detalleImp" class="nota"></span></div>
   <canvas id="imputacion" height="100"></canvas>
 </section>
 {% endblock %}

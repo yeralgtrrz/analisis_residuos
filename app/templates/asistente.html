@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block contenido %}
+<section class="card prosa">
+  <h2>Asistente de datos</h2>
+  <p class="nota">Preguntá en lenguaje natural sobre toneladas, ciudades, tipos, calidad de datos o pronósticos. Si configurás <code>OPENAI_API_KEY</code>, además usa un modelo de lenguaje para redactar la respuesta.</p>
+  <div class="chat">
+    <input id="pregunta" type="text" placeholder="¿Cuál es la ciudad con más residuos?" autocomplete="off">
+    <button id="enviar" type="button">Preguntar</button>
+  </div>
+  <div id="charla" class="charla" aria-live="polite"></div>
+</section>
+{% endblock %}

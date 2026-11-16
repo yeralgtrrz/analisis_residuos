@@ -7,12 +7,15 @@
     <label>Desde <select id="desde"></select></label>
     <label>Hasta <select id="hasta"></select></label>
     <label>Vista <select id="agg"><option value="mensual">Mensual</option><option value="anual">Anual</option></select></label>
+    <label class="toggle"><input type="checkbox" class="imputado"> Datos imputados</label>
   </div>
   <canvas id="serie" height="110"></canvas>
+  <p class="nota" id="omitidos"></p>
   <p class="nota">2020 (COVID-19) cambió el patrón de recolección en varias ciudades.</p>
 </section>
 <div class="dos">
   <section class="card"><h2>Ranking de ciudades <select id="anioRank"></select></h2><canvas id="ranking"></canvas></section>
-  <section class="card"><h2>Residuos por procedencia</h2><canvas id="composicion"></canvas></section>
+  <section class="card"><h2>Residuos por procedencia</h2><canvas id="composicion"></canvas>
+    <p class="nota">Se excluyen los años con menos de 12 meses de dato (2026).</p></section>
 </div>
 {% endblock %}

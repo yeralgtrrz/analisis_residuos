@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block contenido %}
 <section class="card"><div class="controles"><label>Ciudad <select id="ciudad"></select></label>
+<label class="toggle"><input type="checkbox" class="imputado"> Datos imputados</label>
 <a id="reporteLink" href="#">Reporte imprimible</a></div>
 <h2>Tendencia y estacionalidad</h2><canvas id="descomp" height="110"></canvas>
 <h2>Meses atípicos</h2><div id="anomalias" class="scroll"></div></section>

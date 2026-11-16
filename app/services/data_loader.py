@@ -16,6 +16,22 @@ def _num(v):
     return pd.to_numeric(v, errors="coerce")  # 'n.d.' -> NaN
 
 
+def _limpiar(df, claves):
+    """Elimina filas repetidas y valida que no queden claves ambiguas.
+
+    Redondea las toneladas a 6 decimales para que los duplicados por diferencias
+    de punto flotante (p. ej. 10563,9157615964 vs 10563,9157615965) se colapsen.
+    """
+    df = df.copy()
+    df["ton"] = pd.to_numeric(df["ton"], errors="coerce").round(6)
+    df = df.drop_duplicates().reset_index(drop=True)
+    repes = df[df.duplicated(subset=claves, keep=False)]
+    if not repes.empty:
+        ejemplo = repes.sort_values(claves).head(5).to_dict("records")
+        raise ValueError(f"Claves duplicadas con valores distintos en {claves}: {ejemplo}")
+    return df
+
+
 def _mensual(path):
     """Devuelve (mensual, anual) en formato largo: fecha/anio, categoria, toneladas."""
     raw = pd.read_excel(path, header=None)
@@ -59,10 +75,15 @@ def _ciudad_tipo(path):
 def cargar():
     cm, ca = _mensual(ARCHIVOS["ciudades"])
     tm, ta = _mensual(ARCHIVOS["tipos"])
-    for d in (cm, ca):
-        d["categoria"] = d["categoria"].str.title()
+    for d in (cm, ca, tm, ta):
+        d["categoria"] = d["categoria"].str.strip().str.title()
+    cm = _limpiar(cm, ["fecha", "categoria"])
+    ca = _limpiar(ca, ["anio", "categoria"])
+    tm = _limpiar(tm, ["fecha", "categoria"])
+    ta = _limpiar(ta, ["anio", "categoria"])
+    ciudad_tipo = _limpiar(_ciudad_tipo(ARCHIVOS["ciudad_tipo"]), ["anio", "tipo", "ciudad"])
     return {"ciudades": cm, "ciudades_anual": ca, "tipos": tm, "tipos_anual": ta,
-            "ciudad_tipo": _ciudad_tipo(ARCHIVOS["ciudad_tipo"])}
+            "ciudad_tipo": ciudad_tipo}
 
 
 def serie(dataset, categoria):

@@ -3,6 +3,7 @@ import io
 from flask import Blueprint, jsonify, request, send_file
 
 from ..services import analytics as an
+from ..services import asistente as asis
 from ..services.data_loader import cargar, serie
 
 api = Blueprint("api", __name__)
@@ -23,17 +24,19 @@ def get_serie():
     ds = request.args.get("dataset", "ciudades")
     cats = request.args.get("cats", "Total").split(",")
     desde, hasta = int(request.args.get("desde", 2005)), int(request.args.get("hasta", 2026))
-    anual = request.args.get("agg") == "anual"
+    imputado = request.args.get("imputado") == "1"
+    if request.args.get("agg") == "anual":
+        return jsonify(an.serie_anual(ds, cats, desde, hasta, imputado))
     out = []
     for c in cats:
-        s = serie(ds, c).dropna()
+        s = serie(ds, c)
+        if imputado:
+            s = an.imputar_serie(s)[0]
+        elif s.notna().any():
+            s = s.loc[s.first_valid_index():]
         s = s[(s.index.year >= desde) & (s.index.year <= hasta)]
-        if anual:
-            s = s.groupby(s.index.year).sum()
-            x = [str(i) for i in s.index]
-        else:
-            x = s.index.strftime("%Y-%m").tolist()
-        out.append({"nombre": c, "x": x, "y": s.round(0).tolist()})
+        out.append({"nombre": c, "x": s.index.strftime("%Y-%m").tolist(),
+                    "y": s.round(0).where(s.notna(), None).tolist()})
     return jsonify(out)
 
 
@@ -49,7 +52,8 @@ def composicion():
 
 @api.get("/heatmap")
 def heatmap():
-    return jsonify(an.heatmap(request.args.get("dataset", "ciudades"), request.args.get("cat", "Total")))
+    return jsonify(an.heatmap(request.args.get("dataset", "ciudades"), request.args.get("cat", "Total"),
+                              request.args.get("imputado") == "1"))
 
 
 @api.get("/pronostico")
@@ -66,9 +70,10 @@ def faltantes():
 @api.get("/imputacion")
 def imputacion():
     ciudad = request.args.get("ciudad", "Sucre")
-    s, est = an.imputar_ciudad(ciudad)
-    return jsonify({"x": s.index.strftime("%Y-%m").tolist(), "y": s.round(0).tolist(),
-                    "estimado": est.tolist()})
+    s, est, recorte = an.imputar_ciudad(ciudad)
+    return jsonify({"x": s.index.strftime("%Y-%m").tolist(), "y": s.round(0).where(s.notna(), None).tolist(),
+                    "estimado": est.tolist(), "recortado_desde": recorte,
+                    "n_estimados": int(est.sum()), "metodo": "interpolación lineal"})
 
 
 @api.get("/descargar/<dataset>.<fmt>")
@@ -92,7 +97,8 @@ def mapa():
 
 @api.get("/ciudad-tipo")
 def ciudad_tipo():
-    return jsonify(an.ciudad_tipo(request.args.get("ciudad", "La Paz")))
+    return jsonify(an.ciudad_tipo(request.args.get("ciudad", "La Paz"),
+                                  request.args.get("imputado") == "1"))
 
 
 @api.get("/anomalias")
@@ -103,3 +109,9 @@ def anomalias():
 @api.get("/correlacion")
 def correlacion():
     return jsonify(an.correlacion())
+
+
+@api.post("/asistente")
+def asistente():
+    data = request.get_json(silent=True) or {}
+    return jsonify(asis.responder(data.get("pregunta", "")))

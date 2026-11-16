@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block contenido %}
 <section class="card"><div class="controles"><label>Ciudad <select id="ciudad"></select></label>
+<label class="toggle"><input type="checkbox" class="imputado"> Datos imputados</label>
 <span class="nota">Datos anuales 2010-2025. Los vacíos son «n.d.» del INE.</span></div>
 <div class="dos"><div><h2>Evolución por tipo</h2><canvas id="evolucion"></canvas></div>
 <div><h2>Composición del último año</h2><canvas id="torta"></canvas></div></div></section>

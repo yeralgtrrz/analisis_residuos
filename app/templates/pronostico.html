@@ -4,9 +4,12 @@
   <div class="controles">
     <label>Ciudad <select id="ciudad"></select></label>
     <label>Meses a proyectar <select id="meses"><option>6</option><option selected>12</option><option>24</option></select></label>
+    <label class="toggle"><input type="checkbox" class="imputado"> Serie histórica imputada</label>
     <span id="metodo" class="nota"></span>
   </div>
   <canvas id="pronostico" height="110"></canvas>
-  <p class="nota">La banda es un intervalo aproximado del 95 %. Es una proyección estadística, no una garantía.</p>
+  <h2>Backtesting: últimos 12 meses reservados</h2>
+  <div id="modelos" class="scroll"></div>
+  <p class="nota">Se prueban tres modelos y se elige el de menor MAE. La banda de confianza usa el error real del backtesting (no los residuos del ajuste), por eso es menos optimista.</p>
 </section>
 {% endblock %}
