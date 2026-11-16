@@ -24,19 +24,21 @@ def get_serie():
     ds = request.args.get("dataset", "ciudades")
     cats = request.args.get("cats", "Total").split(",")
     desde, hasta = int(request.args.get("desde", 2005)), int(request.args.get("hasta", 2026))
-    imputado = request.args.get("imputado") == "1"
+    crudo = request.args.get("crudo") == "1"
     if request.args.get("agg") == "anual":
-        return jsonify(an.serie_anual(ds, cats, desde, hasta, imputado))
+        return jsonify(an.serie_anual(ds, cats, desde, hasta, crudo))
     out = []
     for c in cats:
         s = serie(ds, c)
-        if imputado:
-            s = an.imputar_serie(s)[0]
+        estimados, recorte = 0, None
+        if not crudo:
+            s, est, recorte = an.imputar_serie(s)
+            estimados = int(est.sum())
         elif s.notna().any():
             s = s.loc[s.first_valid_index():]
         s = s[(s.index.year >= desde) & (s.index.year <= hasta)]
         out.append({"nombre": c, "x": s.index.strftime("%Y-%m").tolist(),
-                    "y": s.round(0).where(s.notna(), None).tolist()})
+                    "y": an._lista(s), "estimados": estimados, "recortado_desde": recorte})
     return jsonify(out)
 
 
@@ -53,7 +55,7 @@ def composicion():
 @api.get("/heatmap")
 def heatmap():
     return jsonify(an.heatmap(request.args.get("dataset", "ciudades"), request.args.get("cat", "Total"),
-                              request.args.get("imputado") == "1"))
+                              request.args.get("crudo") == "1"))
 
 
 @api.get("/pronostico")
@@ -71,7 +73,7 @@ def faltantes():
 def imputacion():
     ciudad = request.args.get("ciudad", "Sucre")
     s, est, recorte = an.imputar_ciudad(ciudad)
-    return jsonify({"x": s.index.strftime("%Y-%m").tolist(), "y": s.round(0).where(s.notna(), None).tolist(),
+    return jsonify({"x": s.index.strftime("%Y-%m").tolist(), "y": an._lista(s),
                     "estimado": est.tolist(), "recortado_desde": recorte,
                     "n_estimados": int(est.sum()), "metodo": "interpolación lineal"})
 
@@ -98,7 +100,7 @@ def mapa():
 @api.get("/ciudad-tipo")
 def ciudad_tipo():
     return jsonify(an.ciudad_tipo(request.args.get("ciudad", "La Paz"),
-                                  request.args.get("imputado") == "1"))
+                                  request.args.get("crudo") == "1"))
 
 
 @api.get("/anomalias")

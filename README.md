@@ -55,7 +55,7 @@ residuos-bolivia/
 
 - **Duplicados**: se eliminan las filas repetidas al cargar. El dataset de tipos traía 72 claves `(fecha, tipo)` repetidas en 2021; sumarlas duplicaba ese año.
 - **Años incompletos**: los agregados anuales excluyen años con menos de 12 meses de dato (2026 llega hasta junio). La vista mensual sí los muestra y la página Calidad lo explica.
-- **Nulos**: criterio único. El tramo inicial sin registro se recorta (Sucre empieza en 2015) y los vacíos interiores se rellenan con interpolación lineal entre meses vecinos. El pronóstico y el análisis usan esa misma serie; el toggle «Datos imputados» permite ver la serie cruda o la estimada.
+- **Nulos**: por defecto se muestra el dataset tratado; el toggle «Ver datos originales (INE)» permite ver los crudos. En las series mensuales/anuales el tramo inicial sin registro se recorta (Sucre empieza en 2015) y los vacíos interiores se interpolan. En Ciudad × Tipo se aplica la regla de umbrales del notebook: menos de 5% de nulos no se imputa (queda `null` y `faltante: true`), 5%-30% se interpola por ciudad/tipo y Sucre (>30%) se recorta antes de 2015. Las sumas ignoran los `null` y marcan el año como incompleto.
 - **Pronóstico**: se reservan los últimos 12 meses y se comparan Holt-Winters, SARIMA y regresión lineal estacional con MAE/MAPE. Se elige el de menor MAE y la banda se calcula con el error del backtesting, no con los residuos del ajuste.
 
 ## Qué incluye
@@ -72,7 +72,7 @@ residuos-bolivia/
 | Aprende | Guía de separación de residuos |
 | Asistente | Preguntas en lenguaje natural sobre los datos (local; opcionalmente con OpenAI) |
 | Reporte | `/reporte/<ciudad>` con KPIs, series y pronóstico; botón «Descargar PDF» (usá Guardar como PDF del navegador) |
-| Calidad de datos | Meses sin dato por ciudad/año y datos estimados por ciudad con el criterio único de imputación |
+| Calidad de datos | Meses sin dato por ciudad/año y datos estimados por ciudad; en Por tipo se explican los umbrales y las celdas sin imputar |
 | Datos | Subida de nuevos Excel con clave de administración, validación y respaldo automático |
 | Modo oscuro | Botón ◐ en la cabecera; respeta `prefers-color-scheme` y recuerda la elección |
 
@@ -82,13 +82,13 @@ residuos-bolivia/
 |---|---|
 | `/api/meta` | Ciudades, tipos, años y años completos |
 | `/api/kpis` | Indicadores del último año completo |
-| `/api/serie?cats=La Paz,El Alto&desde=2010&hasta=2025&agg=anual&imputado=1` | Series de tiempo (crudas o imputadas) |
+| `/api/serie?cats=La Paz,El Alto&desde=2010&hasta=2025&agg=anual` | Series de tiempo tratadas (agregar `crudo=1` para las originales) |
 | `/api/ranking?anio=2024` | Toneladas por ciudad (incluye si el año es parcial) |
 | `/api/composicion` | Toneladas por tipo de procedencia y año (excluye años incompletos) |
-| `/api/heatmap?cat=La Paz&imputado=1` | Matriz mes × año |
+| `/api/heatmap?cat=La Paz` | Matriz mes × año tratada (`crudo=1` para la original) |
 | `/api/pronostico?cat=Total&meses=12` | Backtesting, métricas y proyección |
 | `/api/mapa?anio=2025` | Departamento y burbujas del mapa |
-| `/api/ciudad-tipo?ciudad=La Paz&imputado=1` | Ciudad × tipo, anual |
+| `/api/ciudad-tipo?ciudad=La Paz` | Ciudad × tipo anual tratado, con `estimado`, `faltante`, `anios_incompletos` y `totales` (`crudo=1` para el original) |
 | `/api/anomalias?cat=Total` | Descomposición, meses atípicos y serie cruda |
 | `/api/correlacion` | Matriz de correlación entre ciudades |
 | `/api/faltantes` | Meses sin dato por ciudad/año |

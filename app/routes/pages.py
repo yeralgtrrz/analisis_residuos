@@ -88,6 +88,7 @@ def admin_subir():
             f.save(destino)
         cargar.cache_clear()
         an.pronostico.cache_clear()
+        an.ciudad_tipo_tratado.cache_clear()
         datos = cargar()
         for nombre, df in datos.items():
             if df.empty or not COLUMNAS[nombre] <= set(df.columns):
@@ -97,6 +98,7 @@ def admin_subir():
             shutil.copy2(copia, destino)
         cargar.cache_clear()
         an.pronostico.cache_clear()
+        an.ciudad_tipo_tratado.cache_clear()
         return _p("admin", habilitado=True, mensaje=None,
                   error=f"No se pudo leer el Excel; se restauraron los datos anteriores: {e}"), 400
 

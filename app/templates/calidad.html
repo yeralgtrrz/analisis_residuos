@@ -7,7 +7,7 @@
 </section>
 <section class="card">
   <h2>Datos estimados por ciudad</h2>
-  <p class="nota">Criterio único: el tramo inicial sin registro se recorta (Sucre empieza en 2015) y los vacíos interiores se rellenan con interpolación lineal entre meses vecinos. El pronóstico y el análisis usan esta misma serie.</p>
+  <p class="nota">Series mensuales: el tramo inicial sin registro se recorta (Sucre empieza en 2015) y los vacíos interiores se rellenan con interpolación lineal. Ciudad × Tipo usa umbrales: menos de 5% no se imputa, 5%-30% se interpola y Sucre se recorta antes de 2015. El pronóstico y el análisis usan la serie tratada.</p>
   <div class="controles"><label>Ciudad <select id="ciudadImp"></select></label>
     <span id="detalleImp" class="nota"></span></div>
   <canvas id="imputacion" height="100"></canvas>

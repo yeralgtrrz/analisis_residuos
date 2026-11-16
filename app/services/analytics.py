@@ -8,6 +8,18 @@ import pandas as pd
 from .data_loader import cargar, serie
 
 UMBRAL_COMPLETO = 12
+UMBRAL_BAJO = 5
+UMBRAL_ALTO = 30
+ANIO_CORTE_SUCRE = 2015
+
+
+def _lista(s, dec=0):
+    """Convierte una serie a lista JSON sin NaN (los nulos pasan como None)."""
+    return [None if pd.isna(v) else float(round(v, dec)) for v in s]
+
+
+def _matriz(df, dec=0):
+    return [_lista(fila, dec) for fila in df.values]
 
 
 # --------------------------------------------------------------------------- #
@@ -68,7 +80,7 @@ def ranking(anio):
     d = cargar()["ciudades"]
     d = d[(d.categoria.str.lower() != "total") & (d.fecha.dt.year == anio)]
     r = d.groupby("categoria").ton.sum(min_count=1).sort_values(ascending=False)
-    return {"labels": r.index.tolist(), "values": r.round(0).tolist(),
+    return {"labels": r.index.tolist(), "values": _lista(r),
             "parcial": anio in anios_incompletos("ciudades", "Total")}
 
 
@@ -79,39 +91,41 @@ def composicion():
     d = d[~d.anio.isin(excluidos)]
     p = d.pivot_table(index="anio", columns="categoria", values="ton", aggfunc="sum")
     return {"anios": [int(a) for a in p.index],
-            "series": {c: p[c].round(0).where(p[c].notna(), None).tolist() for c in p},
+            "series": {c: _lista(p[c]) for c in p},
             "excluidos": excluidos}
 
 
-def serie_anual(dataset, cats, desde, hasta, imputado=False):
+def serie_anual(dataset, cats, desde, hasta, crudo=False):
     """Series anuales descartando años con menos de 12 meses con dato."""
     out = []
     for c in cats:
         s = serie(dataset, c)
         s = s[(s.index.year >= desde) & (s.index.year <= hasta)]
-        if imputado:
-            s = imputar_serie(s)[0]
+        estimados, recorte = 0, None
+        if not crudo:
+            s, est, recorte = imputar_serie(s)
+            estimados = int(est.sum())
         total, meses = _anual(s)
         ok = meses[meses >= UMBRAL_COMPLETO]
         filtrado = total.reindex(ok.index)
         out.append({"nombre": c, "x": [str(int(a)) for a in filtrado.index],
-                    "y": filtrado.round(0).tolist(),
-                    "omitidos": [int(a) for a in meses[meses < UMBRAL_COMPLETO].index]})
+                    "y": _lista(filtrado),
+                    "omitidos": [int(a) for a in meses[meses < UMBRAL_COMPLETO].index],
+                    "estimados": estimados, "recortado_desde": recorte})
     return out
 
 
-def heatmap(dataset, cat, imputado=False):
+def heatmap(dataset, cat, crudo=False):
     s = serie(dataset, cat)
-    if imputado:
+    if not crudo:
         s = imputar_serie(s)[0]
-    else:
-        s = s.dropna()
-    p = s.groupby([s.index.year, s.index.month]).sum().unstack()
+    p = s.groupby([s.index.year, s.index.month]).sum(min_count=1).unstack()
+    p = p.reindex(columns=range(1, 13))
     return {"anios": [int(a) for a in p.index], "meses": [int(m) for m in p.columns],
-            "valores": p.round(0).where(p.notna(), None).values.tolist()}
+            "valores": _matriz(p)}
 
 # --------------------------------------------------------------------------- #
-# Nulos: un solo criterio (Sucre se recorta antes de 2015, resto interpola)
+# Nulos: series mensuales (recorte inicial + interpolación) y umbrales Ciudad x Tipo
 # --------------------------------------------------------------------------- #
 def imputar_serie(s):
     """Recorta el tramo inicial sin dato y rellena con interpolación lineal.
@@ -147,21 +161,82 @@ def faltantes():
             "valores": p.fillna(0).astype(int).values.tolist()}
 
 
-def ciudad_tipo(ciudad, imputado=False):
-    d = cargar()["ciudad_tipo"]
+@lru_cache(maxsize=1)
+def ciudad_tipo_tratado():
+    """Aplica la regla de umbrales del notebook al dataset Ciudad x Tipo.
+
+    <5% de nulos: no se imputa, la celda queda nula y marcada como faltante.
+    5%-30%: interpolación lineal por (ciudad, tipo).
+    >30%: Sucre se recorta antes de 2015 y luego se interpola por tipo.
+    """
+    d = cargar()["ciudad_tipo"].copy()
+    d = d[d.tipo.str.lower() != "total"].copy()
+    d["pct"] = d.groupby("ciudad")["ton"].transform(lambda s: s.isna().mean() * 100)
+    d["estimado"] = False
+    d["faltante"] = False
+
+    bajo = d.pct < UMBRAL_BAJO
+    d.loc[bajo & d.ton.isna(), "faltante"] = True
+
+    media = (d.pct >= UMBRAL_BAJO) & (d.pct <= UMBRAL_ALTO)
+    if media.any():
+        bloque = d[media]
+        est = bloque.ton.isna()
+        imp = bloque.groupby(["ciudad", "tipo"], group_keys=False)["ton"].transform(
+            lambda s: s.interpolate(method="linear", limit_direction="both"))
+        d.loc[media, "estimado"] = est
+        d.loc[media, "ton"] = imp
+
+    alto = d.pct > UMBRAL_ALTO
+    if alto.any():
+        d = d[~(alto & (d.anio < ANIO_CORTE_SUCRE))].copy()
+        alto = d.pct > UMBRAL_ALTO
+        bloque = d[alto]
+        est = bloque.ton.isna()
+        imp = bloque.groupby(["ciudad", "tipo"], group_keys=False)["ton"].transform(
+            lambda s: s.interpolate(method="linear", limit_direction="both"))
+        d.loc[alto, "estimado"] = est
+        d.loc[alto, "ton"] = imp
+
+    quedan = d.ton.isna() & ~d.faltante
+    d.loc[quedan, "faltante"] = True
+    return d.reset_index(drop=True)
+
+
+def ciudad_tipo(ciudad, crudo=False):
+    d = cargar()["ciudad_tipo"] if crudo else ciudad_tipo_tratado()
     d = d[(d.ciudad.str.lower() == ciudad.lower()) & (d.tipo.str.lower() != "total")]
     p = d.pivot_table(index="anio", columns="tipo", values="ton", dropna=False).sort_index()
-    estimado = {}
-    if imputado:
-        if ciudad.lower() == "sucre":
-            p = p[p.index >= 2015]
-        for c in p.columns:
-            col = p[c]
-            estimado[c] = col.isna().tolist()
-            p[c] = col.interpolate(method="linear", limit_direction="both")
+    p = p.reindex(columns=sorted(p.columns))
+
+    if crudo:
+        estimado = {c: [False] * len(p) for c in p.columns}
+        faltante = {c: p[c].isna().tolist() for c in p.columns}
+    else:
+        pe = d.pivot_table(index="anio", columns="tipo", values="estimado",
+                           aggfunc="first", dropna=False).reindex(p.index)
+        pf = d.pivot_table(index="anio", columns="tipo", values="faltante",
+                           aggfunc="first", dropna=False).reindex(p.index)
+        pe = pe.reindex(columns=p.columns).fillna(False).astype(bool)
+        pf = pf.reindex(columns=p.columns).fillna(True).astype(bool)
+        estimado = {c: pe[c].tolist() for c in p.columns}
+        faltante = {c: pf[c].tolist() for c in p.columns}
+
+    incompletos = [int(a) for i, a in enumerate(p.index)
+                   if any(faltante[c][i] for c in p.columns)]
+    totales = []
+    for a in p.index:
+        valores = p.loc[a].dropna()
+        totales.append(float(round(valores.sum())) if len(valores) else None)
+
     return {"anios": [int(a) for a in p.index],
-            "series": {c: p[c].round(0).where(p[c].notna(), None).tolist() for c in p},
-            "estimado": estimado, "imputado": imputado}
+            "series": {c: _lista(p[c]) for c in p.columns},
+            "estimado": estimado,
+            "faltante": faltante,
+            "anios_incompletos": incompletos,
+            "totales": totales,
+            "imputado": not crudo,
+            "crudo": crudo}
 
 
 # --------------------------------------------------------------------------- #
@@ -245,14 +320,14 @@ def pronostico(dataset, cat, meses=12):
             "banda": "error de backtesting",
             "modelos": comparacion,
             "backtest": {"x": prueba.index.strftime("%Y-%m").tolist(),
-                         "real": prueba.round(0).tolist(),
-                         "predicciones": {k: np.round(v, 0).tolist() for k, v in predicciones.items()}},
-            "hist": {"x": s.index.strftime("%Y-%m").tolist()[-60:], "y": s.round(0).tolist()[-60:]},
+                         "real": _lista(prueba),
+                         "predicciones": {k: _lista(v) for k, v in predicciones.items()}},
+            "hist": {"x": s.index.strftime("%Y-%m").tolist()[-60:], "y": _lista(s)[-60:]},
             "hist_crudo": {"x": raw.index.strftime("%Y-%m").tolist()[-60:],
-                           "y": raw.round(0).where(raw.notna(), None).tolist()[-60:]},
-            "pred": {"x": idx.strftime("%Y-%m").tolist(), "y": pred.round(0).tolist(),
-                     "min": (pred - 1.96 * sigma).round(0).tolist(),
-                     "max": (pred + 1.96 * sigma).round(0).tolist()}}
+                           "y": _lista(raw)[-60:]},
+            "pred": {"x": idx.strftime("%Y-%m").tolist(), "y": _lista(pred),
+                     "min": _lista(pred - 1.96 * sigma),
+                     "max": _lista(pred + 1.96 * sigma)}}
 
 
 def anomalias(dataset, cat, umbral=2.5):
@@ -264,7 +339,7 @@ def anomalias(dataset, cat, umbral=2.5):
     res = s - tend - estac
     z = res / res.std()
     idx = z.abs() > umbral
-    f = lambda x: x.round(0).where(x.notna(), None).tolist()
+    f = _lista
     return {"x": s.index.strftime("%Y-%m").tolist(), "y": f(s), "y_crudo": f(crudo),
             "tendencia": f(tend), "estacional": f(estac),
             "anomalias": [{"mes": d.strftime("%Y-%m"), "ton": round(float(s[d])), "z": round(float(z[d]), 1)}
@@ -283,11 +358,11 @@ COORDS = {"Sucre": (-65.26, -19.04), "La Paz": (-68.13, -16.50), "Cochabamba": (
 def mapa(anio):
     r = ranking(anio)
     return [{"ciudad": c, "ton": t, "lon": COORDS[c][0], "lat": COORDS[c][1]}
-            for c, t in zip(r["labels"], r["values"]) if c in COORDS]
+            for c, t in zip(r["labels"], r["values"]) if c in COORDS and t is not None]
 
 
 def correlacion():
     d = cargar()["ciudades"]
     p = d[d.categoria.str.lower() != "total"].pivot_table(index="fecha", columns="categoria", values="ton")
     c = p.diff().corr()
-    return {"ciudades": c.columns.tolist(), "valores": c.round(2).where(c.notna(), None).values.tolist()}
+    return {"ciudades": c.columns.tolist(), "valores": _matriz(c, 2)}
