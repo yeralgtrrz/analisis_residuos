@@ -3,7 +3,7 @@ import io
 from flask import Blueprint, jsonify, request, send_file
 
 from ..services import analytics as an
-from ..services.data_loader import cargar, serie
+from ..services.data_loader import serie
 
 api = Blueprint("api", __name__)
 
@@ -28,16 +28,17 @@ def get_serie():
         return jsonify(an.serie_anual(ds, cats, desde, hasta, crudo))
     out = []
     for c in cats:
+        if an._es_cobija(c):
+            continue
         s = serie(ds, c)
-        estimados, recorte = 0, None
+        recorte = None
         if not crudo:
-            s, est, recorte = an.imputar_serie(s)
-            estimados = int(est.sum())
+            s, recorte = an.preparar_serie(s, c)
         elif s.notna().any():
             s = s.loc[s.first_valid_index():]
         s = s[(s.index.year >= desde) & (s.index.year <= hasta)]
         out.append({"nombre": c, "x": s.index.strftime("%Y-%m").tolist(),
-                    "y": an._lista(s), "estimados": estimados, "recortado_desde": recorte})
+                    "y": an._lista(s), "estimados": 0, "recortado_desde": recorte})
     return jsonify(out)
 
 
@@ -69,18 +70,41 @@ def faltantes():
     return jsonify(an.faltantes())
 
 
-@api.get("/imputacion")
-def imputacion():
-    ciudad = request.args.get("ciudad", "Sucre")
-    s, est, recorte = an.imputar_ciudad(ciudad)
-    return jsonify({"x": s.index.strftime("%Y-%m").tolist(), "y": an._lista(s),
-                    "estimado": est.tolist(), "recortado_desde": recorte,
-                    "n_estimados": int(est.sum()), "metodo": "interpolación lineal"})
+@api.get("/cobertura")
+def cobertura():
+    return jsonify(an.cobertura_ciudad(request.args.get("ciudad", "Sucre")))
+
+
+@api.get("/consistencia")
+def consistencia():
+    return jsonify(an.consistencia())
+
+
+@api.get("/limpieza")
+@api.get("/log-limpieza")
+def limpieza():
+    return jsonify(an.log_limpieza())
+
+
+@api.get("/limpieza.csv")
+@api.get("/log-limpieza.csv")
+def limpieza_csv():
+    import pandas as pd
+
+    buf = io.BytesIO()
+    pd.DataFrame(an.log_limpieza()).to_csv(buf, index=False)
+    buf.seek(0)
+    return send_file(buf, mimetype="text/csv", as_attachment=True,
+                     download_name="limpieza.csv")
 
 
 @api.get("/descargar/<dataset>.<fmt>")
 def descargar(dataset, fmt):
-    df = cargar()[dataset]
+    crudo = request.args.get("crudo") == "1"
+    try:
+        df = an.datos_descarga(dataset, crudo)
+    except KeyError:
+        return jsonify({"error": "Dataset desconocido"}), 404
     buf = io.BytesIO()
     if fmt == "xlsx":
         df.to_excel(buf, index=False)
@@ -89,7 +113,8 @@ def descargar(dataset, fmt):
         buf.write(df.to_csv(index=False).encode("utf-8-sig"))
         mime = "text/csv"
     buf.seek(0)
-    return send_file(buf, mimetype=mime, as_attachment=True, download_name=f"{dataset}.{fmt}")
+    nombre = dataset + ("_crudo" if crudo else "") + "." + fmt
+    return send_file(buf, mimetype=mime, as_attachment=True, download_name=nombre)
 
 
 @api.get("/mapa")

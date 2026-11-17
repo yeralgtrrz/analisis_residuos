@@ -14,7 +14,9 @@
       <a href="{{ url }}" {% if id == actual %}aria-current="page"{% endif %}>{{ nombre }}</a>{% endfor %}
     </nav>
     <span class="descargas">Datos:
-      <a href="/api/descargar/ciudades.csv">CSV</a> <a href="/api/descargar/ciudades.xlsx">Excel</a>
+      <a href="/api/descargar/ciudades.csv" title="Datos tratados, sin Cobija en vistas por ciudad">CSV limpio</a>
+      <a href="/api/descargar/ciudades.xlsx" title="Datos tratados, sin Cobija en vistas por ciudad">Excel limpio</a>
+      <a href="/api/descargar/ciudades.csv?crudo=1" title="Datos completos con Cobija, deduplicados y renombrados">CSV crudo</a>
     </span>
     <button id="tema" class="tema" type="button" aria-label="Cambiar entre tema claro y oscuro" title="Cambiar tema">◐</button>
   </header>

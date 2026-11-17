@@ -7,6 +7,11 @@ import pandas as pd
 
 from config import ARCHIVOS
 
+RENOMBRES = {"Domiciliaria": "Domiciliarios", "Hospital": "Establecimientos de salud",
+             "Otros(1)": "Otros"}
+
+_LOG = []
+
 MESES = {m: i + 1 for i, m in enumerate(
     ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio",
      "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"])}
@@ -71,19 +76,38 @@ def _ciudad_tipo(path):
     return pd.DataFrame(rows, columns=["anio", "tipo", "ciudad", "ton"])
 
 
+def _preparar(nombre, df, claves, nota=""):
+    filas = len(df)
+    limpio = _limpiar(df, claves)
+    _LOG.append({"dataset": nombre, "filas_iniciales": filas,
+                 "duplicados": filas - len(limpio), "filas_finales": len(limpio),
+                 "nulos": int(limpio.ton.isna().sum()), "nota": nota})
+    return limpio
+
+
 @lru_cache(maxsize=1)
 def cargar():
+    global _LOG
+    _LOG = []
     cm, ca = _mensual(ARCHIVOS["ciudades"])
     tm, ta = _mensual(ARCHIVOS["tipos"])
-    for d in (cm, ca, tm, ta):
+    for d in (cm, ca):
         d["categoria"] = d["categoria"].str.strip().str.title()
-    cm = _limpiar(cm, ["fecha", "categoria"])
-    ca = _limpiar(ca, ["anio", "categoria"])
-    tm = _limpiar(tm, ["fecha", "categoria"])
-    ta = _limpiar(ta, ["anio", "categoria"])
-    ciudad_tipo = _limpiar(_ciudad_tipo(ARCHIVOS["ciudad_tipo"]), ["anio", "tipo", "ciudad"])
+    for d in (tm, ta):
+        d["categoria"] = d["categoria"].str.strip().str.title().replace(RENOMBRES)
+    cm = _preparar("ciudades", cm, ["fecha", "categoria"])
+    ca = _preparar("ciudades_anual", ca, ["anio", "categoria"])
+    tm = _preparar("tipos", tm, ["fecha", "categoria"], "Nombres de tipos unificados")
+    ta = _preparar("tipos_anual", ta, ["anio", "categoria"], "Nombres de tipos unificados")
+    ciudad_tipo = _preparar("ciudad_tipo", _ciudad_tipo(ARCHIVOS["ciudad_tipo"]),
+                            ["anio", "tipo", "ciudad"])
     return {"ciudades": cm, "ciudades_anual": ca, "tipos": tm, "tipos_anual": ta,
             "ciudad_tipo": ciudad_tipo}
+
+
+def log_carga():
+    cargar()
+    return [dict(r) for r in _LOG]
 
 
 def serie(dataset, categoria):

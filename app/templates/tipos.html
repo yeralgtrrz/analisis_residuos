@@ -2,7 +2,7 @@
 {% block contenido %}
 <section class="card"><div class="controles"><label>Ciudad <select id="ciudad"></select></label>
 <label class="toggle"><input type="checkbox" class="crudo"> Ver datos originales (INE)</label>
-<span class="nota">Datos anuales 2010-2025 con la regla de umbrales del notebook: menos de 5% no se imputa, 5%-30% se interpola y Sucre se recorta antes de 2015.</span></div>
+<span class="nota">Datos anuales 2010-2025. Tratado: sin imputación; los tipos sin dato se marcan como no reportados y valen 0; Sucre empieza en 2015.</span></div>
 <div class="dos"><div><h2>Evolución por tipo</h2><canvas id="evolucion"></canvas></div>
 <div><h2>Composición del último año</h2><canvas id="torta"></canvas></div></div>
 <p class="nota" id="notaTipos"></p></section>

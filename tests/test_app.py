@@ -25,47 +25,75 @@ def test_composicion_limpia():
     assert 1_550_000 < total_2025 < 1_650_000
 
 
-def test_sucre_recortado_e_imputado():
-    serie, est, recorte = an.imputar_ciudad("Sucre")
-    assert recorte == "2015-01"
-    assert serie.index[0].year == 2015
-    assert int(est.sum()) == 6
-    assert not serie.isna().any()
+def test_b_sin_cobija_y_sin_nulos():
+    d = an.ciudades_tratado()
+    assert "Cobija" not in set(d.categoria)
+    assert d[d.categoria == "Sucre"].fecha.min().year == 2015
+    assert not d.ton.isna().any()
+    assert len(d) == 2448
 
 
-def test_ciudad_tipo_umbrales():
+def test_ciudad_tipo_sin_imputacion():
     t = an.ciudad_tipo_tratado()
+    assert "Cobija" not in set(t.ciudad)
     assert t[t.ciudad == "Sucre"].anio.min() == 2015
-    assert t[t.ciudad == "Sucre"].anio.max() == 2025
-    assert t[t.faltante].ton.isna().all()
-    assert t[~t.faltante].ton.notna().all()
-    por = t.groupby("ciudad").agg(est=("estimado", "sum"), falt=("faltante", "sum"))
-    assert por.loc["Oruro", "falt"] == 3 and por.loc["Santa Cruz", "falt"] == 3
-    assert por.loc["Cobija", "est"] == 15
-    assert por.loc["El Alto", "est"] == 10
-    assert por.loc["Cochabamba", "est"] == 6
-    assert por.loc["Trinidad", "est"] == 6
-    assert por.loc["Sucre", "est"] == 3
-    assert int(t.estimado.sum()) == 40 and int(t.faltante.sum()) == 6
+    assert not t.ton.isna().any()
+    assert bool(t.estimado.any()) is False and bool(t.faltante.any()) is False
+    assert int(t.no_reportado.sum()) == 31
+    por = t.groupby("ciudad").no_reportado.sum()
+    assert por.loc["Oruro"] == 3 and por.loc["Santa Cruz"] == 3
+    assert por.loc["Sucre"] == 3 and por.loc["Trinidad"] == 6
 
 
 def test_ciudad_tipo_api_tratado_y_crudo():
     c = create_app().test_client()
     d = c.get("/api/ciudad-tipo?ciudad=Sucre").get_json()
     assert d["anios"][0] == 2015 and d["anios"][-1] == 2025
-    assert d["imputado"] is True and d["crudo"] is False
+    assert d["tratado"] is True and d["imputado"] is False
     assert not any(v is None for s in d["series"].values() for v in s)
-    assert sum(sum(v) for v in d["estimado"].values()) == 3
+    assert sum(sum(v) for v in d["no_reportado"].values()) == 3
 
     crudo = c.get("/api/ciudad-tipo?ciudad=Sucre&crudo=1").get_json()
-    assert crudo["anios"][0] == 2010 and crudo["imputado"] is False
+    assert crudo["anios"][0] == 2010 and crudo["tratado"] is False
     assert sum(v is None for s in crudo["series"].values() for v in s) == 28
 
     oruro = c.get("/api/ciudad-tipo?ciudad=Oruro").get_json()
-    assert sum(v is None for s in oruro["series"].values() for v in s) == 3
-    assert sum(sum(v) for v in oruro["faltante"].values()) == 3
-    assert oruro["anios_incompletos"] == [2010, 2011, 2012]
+    assert sum(sum(v) for v in oruro["no_reportado"].values()) == 3
+    assert oruro["anios_incompletos"] == []
     assert oruro["totales"][0] is not None
+
+
+def test_cobija_fuera_de_vistas_por_ciudad():
+    assert "Cobija" not in an.meta()["ciudades"]
+    assert "Cobija" not in an.ranking(2025)["labels"]
+    assert "Cobija" not in {x["ciudad"] for x in an.mapa(2025)}
+    c = create_app().test_client()
+    assert c.get("/api/serie?cats=Cobija&agg=mensual").get_json() == []
+
+    crudo = c.get("/api/serie?cats=Cobija&agg=mensual&crudo=1").get_json()
+    assert crudo == []
+    d = an.faltantes()
+    cobija = next(x for x in d["rachas"] if x["ciudad"] == "Cobija")
+    assert cobija["excluida"] is True and cobija["cruda"] == 43 and cobija["tratada"] is None
+
+
+def test_consistencia_y_rachas():
+    co = an.consistencia()
+    assert co["b_c"]["dif_max"] < 0.001
+    assert co["b_a"]["dif_max"] < 0.001
+    assert 0 < co["b_sin_cobija_c"]["dif_media"] < 3
+    assert 0 < co["b_sin_cobija_c"]["dif_max"] < 3
+
+    r = {x["ciudad"]: x for x in an.faltantes()["rachas"]}
+    assert r["Sucre"]["tratada"] == 3 and r["Sucre"]["cruda"] == 120
+    assert r["Trinidad"]["tratada"] == 3 and r["Trinidad"]["cruda"] == 3
+
+
+def test_hampel_sucre():
+    a = an.anomalias("ciudades", "Sucre")
+    dic = next(z for z in a["anomalias"] if z["mes"] == "2020-12")
+    assert -65 < dic["desvio_pct"] < -60
+    assert len(a["ton_final"]) == len(a["x"])
 
 
 def test_json_sin_nan():
@@ -75,7 +103,8 @@ def test_json_sin_nan():
             "/api/serie?cats=Cobija&agg=mensual&crudo=1", "/api/heatmap?cat=Total",
             "/api/heatmap?cat=Sucre&crudo=1", "/api/ranking?anio=2026",
             "/api/pronostico?cat=Total", "/api/pronostico?cat=Total&modelo=SARIMA",
-            "/api/anomalias?cat=Oruro", "/api/correlacion"]
+            "/api/anomalias?cat=Oruro", "/api/correlacion", "/api/cobertura?ciudad=Sucre",
+            "/api/consistencia", "/api/limpieza"]
 
     def falla(x):
         raise ValueError(f"JSON inválido: {x}")
@@ -99,9 +128,11 @@ def test_pronostico_backtesting():
     assert {m["modelo"] for m in p["modelos"]} == {"Holt-Winters", "SARIMA", "Regresión lineal"}
     assert p["metodo"] in {m["modelo"] for m in p["modelos"]}
     assert p["banda"] == "error de backtesting"
+    assert p["corte"] == "2023-01"
+    assert p["backtest"]["x"][0] == "2023-01"
     assert len(p["pred"]["x"]) == 12
     assert all(m["mae"] >= 0 for m in p["modelos"])
-    assert len(p["residuos"]["y"]) == len(p["backtest"]["x"]) == 12
+    assert len(p["residuos"]["y"]) == len(p["backtest"]["x"]) == 42
     assert set(p["backtest"]["predicciones"]) == {m["modelo"] for m in p["modelos"]}
 
     forzado = an.pronostico("ciudades", "Total", 12, "SARIMA")
@@ -110,11 +141,24 @@ def test_pronostico_backtesting():
     assert an.pronostico("ciudades", "Total", 12, "No existe")["automatico"] is True
 
 
+def test_descargas_tratadas_y_crudas():
+    c = create_app().test_client()
+    limpio = c.get("/api/descargar/ciudades.csv").get_data(as_text=True)
+    crudo = c.get("/api/descargar/ciudades.csv?crudo=1").get_data(as_text=True)
+    assert "Cobija" not in limpio
+    assert "Cobija" in crudo
+    assert len(crudo) > len(limpio)
+    assert c.get("/api/limpieza.csv").status_code == 200
+    assert c.get("/api/descargar/no_existe.csv").status_code == 404
+
+
 def test_endpoints():
     c = create_app().test_client()
     for url in ["/", "/comparar", "/pronostico", "/calidad",
                 "/api/meta", "/api/kpis", "/api/ranking?anio=2024",
-                "/api/composicion", "/api/heatmap?cat=La Paz", "/api/faltantes", "/api/imputacion",
+                "/api/composicion", "/api/heatmap?cat=La Paz", "/api/faltantes",
+                "/api/cobertura?ciudad=Sucre", "/api/consistencia", "/api/limpieza",
+                "/api/limpieza.csv",
                 "/api/serie?cats=La Paz,El Alto&agg=anual", "/api/serie?cats=Sucre&agg=anual",
                 "/api/serie?cats=Sucre&agg=anual&crudo=1",
                 "/api/pronostico?cat=Total", "/api/pronostico?cat=Total&modelo=SARIMA",

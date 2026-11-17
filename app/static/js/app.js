@@ -31,8 +31,8 @@ const paginas = {
       dibujar("serie", { type: "line", data: { labels: s.x, datasets: [{ label: s.nombre + " (t)", data: s.y, borderColor: COLORES[0], pointRadius: 0, tension: .2, spanGaps: !crudoOn() }] }, options: { scales: ejes } });
       $("#omitidos").textContent = s.omitidos?.length ? `Años omitidos por tener menos de 12 meses: ${s.omitidos.join(", ")}.` : "";
       $("#notaSerie").textContent = crudoOn()
-        ? "Datos originales del INE; los vacíos no se imputan."
-        : (s.estimados ? `Incluye ${s.estimados} valores estimados por interpolación${s.recortado_desde ? ` y recorte desde ${s.recortado_desde}` : ""}.` : "");
+        ? "Datos originales del INE; incluye Cobija y los vacíos no se imputan."
+        : `Serie tratada sin interpolación; Sucre empieza en 2015 y Cobija se excluye de las vistas por ciudad.${s.recortado_desde ? ` Recorte aplicado desde ${s.recortado_desde}.` : ""}`;
     };
     const rank = async () => {
       const r = await get("/api/ranking?anio=" + $("#anioRank").value);
@@ -53,10 +53,9 @@ const paginas = {
       const data = await get(`/api/serie?cats=${cats.join(",")}&agg=${$("#agg").value}${qCrudo()}`);
       const orden = alinear(data);
       dibujar("comparar", { type: "line", data: { labels: orden.x, datasets: orden.series.map((s, i) => ({ label: s.nombre, data: s.y, borderColor: COLORES[i % 10], pointRadius: 0, spanGaps: !crudoOn() })) }, options: { scales: ejes } });
-      const est = data.reduce((a, s) => a + (s.estimados || 0), 0);
       $("#notaComparar").textContent = crudoOn()
-        ? "Datos originales del INE; los vacíos no se imputan."
-        : (est ? `Incluye ${est} valores estimados por interpolación.` : "");
+        ? "Datos originales del INE; incluye Cobija y los vacíos no se imputan."
+        : "Series tratadas sin interpolación. La suma de ciudades no iguala al Total porque Cobija se excluye de las vistas por ciudad (~1 %).";
     };
     $("#chips").addEventListener("change", comparar); $("#agg").addEventListener("change", comparar);
     $("#hmCiudad").innerHTML = opciones(["Total", ...meta.ciudades]);
@@ -81,11 +80,11 @@ const paginas = {
         : `Modelo forzado: ${p.metodo}`;
       $("#modelos").innerHTML = `<table class="hm"><tr><th>Modelo</th><th>MAE (t)</th><th>MAPE (%)</th></tr>` +
         p.modelos.map((m) => `<tr><th>${m.modelo}${m.modelo === p.metodo ? " ✓" : ""}</th><td>${fmt(m.mae)}</td><td>${m.mape ?? "—"}</td></tr>`).join("") +
-        `</table><p class="nota">Backtesting sobre ${p.backtest.x.length} meses reservados.</p>`;
+        `</table><p class="nota">Backtesting con prueba desde ${p.corte} (${p.backtest.x.length} meses).</p>`;
       const h = crudoOn() ? p.hist_crudo : p.hist;
       $("#notaPron").textContent = crudoOn()
-        ? "Serie histórica original del INE; los vacíos no se imputan."
-        : "Serie histórica tratada; incluye valores estimados cuando había vacíos.";
+        ? "Serie histórica original del INE; incluye Cobija y los vacíos no se imputan."
+        : "Serie histórica tratada sin interpolación visual; el modelo interpola internamente para regularizar la serie mensual.";
       const pad = new Array(h.x.length).fill(null);
       dibujar("pronostico", { type: "line", data: { labels: [...h.x, ...p.pred.x], datasets: [
         { label: "Histórico", data: [...h.y, ...new Array(p.pred.x.length).fill(null)], borderColor: COLORES[0], pointRadius: 0, spanGaps: !crudoOn() },
@@ -127,16 +126,33 @@ const paginas = {
     const f = await get("/api/faltantes");
     const celda = (x) => `<td style="background:${x ? `rgba(180,69,47,${.2 + x / 12 * .8})` : "var(--mapa)"};color:${x > 6 ? "#fff" : "var(--tinta)"}">${x || ""}</td>`;
     $("#faltantes").innerHTML = `<table class="hm"><tr><th></th>${f.anios.map((a) => `<th>${a}</th>`).join("")}</tr>` + f.ciudades.map((c, i) => `<tr><th>${c}</th>${f.valores[i].map(celda).join("")}</tr>`).join("") + "</table>";
-    const dibujarImp = async () => {
+
+    const r = f.rachas.map((x) => `<tr><th>${x.ciudad}${x.excluida ? " (excluida)" : ""}</th>` +
+      `<td>${x.excluida ? "—" : x.tratada}</td><td>${x.inicio_tratada && x.fin_tratada ? `${x.inicio_tratada} → ${x.fin_tratada}` : "—"}</td>` +
+      `<td>${x.cruda}</td><td>${x.inicio_cruda && x.fin_cruda ? `${x.inicio_cruda} → ${x.fin_cruda}` : "—"}</td>` +
+      `<td>${x.anios_afectados.length ? x.anios_afectados.join(", ") : "—"}</td></tr>`).join("");
+    $("#rachas").innerHTML = `<table class="hm"><tr><th>Ciudad</th><th>Racha tratada</th><th>Período tratado</th><th>Racha cruda</th><th>Período crudo</th><th>Años con huecos</th></tr>${r}</table>`;
+
+    const co = await get("/api/consistencia");
+    $("#consistencia").innerHTML = `<table class="hm"><tr><th>Comparación</th><th>Período</th><th>Diferencia máxima</th></tr>` +
+      `<tr><th>B vs C (B con Cobija)</th><td>${co.b_c.periodo}</td><td>${co.b_c.dif_max} % (${co.b_c.meses} meses)</td></tr>` +
+      `<tr><th>B sin Cobija vs C</th><td>${co.b_sin_cobija_c.periodo}</td><td>media ${co.b_sin_cobija_c.dif_media} %, máximo ${co.b_sin_cobija_c.dif_max} % (${co.b_sin_cobija_c.meses} meses)</td></tr>` +
+      `<tr><th>B vs A (ciudad-año)</th><td>${co.b_a.periodo}</td><td>${co.b_a.dif_max} % (${co.b_a.pares} pares)</td></tr></table>`;
+
+    const lg = await get("/api/limpieza");
+    $("#logLimpieza").innerHTML = `<table class="hm"><tr><th>Paso</th><th>Dataset</th><th>Problema</th><th>Cantidad</th><th>Método</th><th>Por qué</th></tr>` +
+      lg.map((x) => `<tr><td>${x.paso}</td><td>${x.dataset}</td><td>${x.problema}</td><td>${x.cantidad}</td><td>${x.metodo}</td><td>${x.porque}</td></tr>`).join("") + "</table>";
+
+    const dibujarCob = async () => {
       const ciudad = $("#ciudadImp").value;
-      const s = await get("/api/imputacion?ciudad=" + ciudad);
-      $("#detalleImp").textContent = `Recorte: ${s.recortado_desde || "sin recorte"} · ${s.n_estimados} meses estimados con ${s.metodo}.`;
-      dibujar("imputacion", { type: "line", data: { labels: s.x, datasets: [
-        { label: ciudad + " (t)", data: s.y, borderColor: COLORES[0], pointRadius: 0, spanGaps: true },
-        { label: "Estimado", data: s.y.map((v, i) => s.estimado[i] ? v : null), borderColor: COLORES[1], pointBackgroundColor: COLORES[1], pointRadius: 3, showLine: false }] }, options: { scales: ejes } });
+      const s = await get("/api/cobertura?ciudad=" + ciudad);
+      $("#detalleImp").textContent = `Huecos: ${s.n_huecos} meses · racha máxima: ${s.racha_max} meses` +
+        `${s.inicio_racha ? ` (${s.inicio_racha} → ${s.fin_racha})` : ""} · recorte: ${s.recortado_desde || "sin recorte"}. Sin interpolación.`;
+      dibujar("cobertura", { type: "line", data: { labels: s.x, datasets: [
+        { label: ciudad + " (t)", data: s.y, borderColor: COLORES[0], pointRadius: 0, spanGaps: false }] }, options: { scales: ejes } });
     };
-    $("#ciudadImp").addEventListener("change", dibujarImp);
-    dibujarImp();
+    $("#ciudadImp").addEventListener("change", dibujarCob);
+    dibujarCob();
   },
 };
 const tabla = (cols, filas, color) => `<table class="hm"><tr><th></th>${cols.map((c) => `<th>${c}</th>`).join("")}</tr>` + filas.map(([n, v]) => `<tr><th>${n}</th>${v.map(color).join("")}</tr>`).join("") + "</table>";
@@ -189,17 +205,16 @@ Object.assign(paginas, {
     const run = async () => {
       const d = await get(`/api/ciudad-tipo?ciudad=${$("#ciudad").value}${qCrudo()}`), n = Object.keys(d.series);
       const base = n.map((k, i) => ({ label: k, data: d.series[k], borderColor: COLORES[i], pointRadius: 2, spanGaps: false }));
-      const hayEstimados = Object.values(d.estimado || {}).some((arr) => arr.some(Boolean));
-      const estimados = !crudoOn() && hayEstimados
-        ? n.map((k, i) => ({ label: k + " (estimado)", data: d.series[k].map((v, j) => d.estimado[k][j] ? v : null), borderColor: COLORES[i], pointBackgroundColor: COLORES[i], pointStyle: "rectRot", pointRadius: 4, borderDash: [6, 4], showLine: true, spanGaps: false, fill: false }))
-        : [];
-      dibujar("evolucion", { type: "line", data: { labels: d.anios, datasets: [...base, ...estimados] }, options: { scales: ejes } });
+      dibujar("evolucion", { type: "line", data: { labels: d.anios, datasets: base }, options: { scales: ejes } });
       const ult = d.anios.length - 1;
       const partes = [];
-      if (!crudoOn() && hayEstimados) partes.push("Incluye valores estimados por interpolación (línea punteada).");
-      if (d.anios_incompletos?.length) partes.push(`Años incompletos: ${d.anios_incompletos.join(", ")}. Los tipos sin dato no se cuentan como 0.`);
-      if (crudoOn()) partes.push("Datos originales del INE; los vacíos aparecen como cortes.");
-      if (d.totales?.[ult] != null) partes.push(`Total ${d.anios[ult]}: ${fmt(d.totales[ult])} t con los tipos disponibles.`);
+      if (d.anios_incompletos?.length) partes.push(`Años incompletos: ${d.anios_incompletos.join(", ")}. Los tipos sin dato quedan vacíos.`);
+      if (crudoOn()) partes.push("Datos originales del INE; los vacíos aparecen como cortes y Sucre no se recorta.");
+      else {
+        const nr = Object.values(d.no_reportado || {}).reduce((a, arr) => a + arr.filter(Boolean).length, 0);
+        partes.push(`Serie tratada sin imputación: ${nr} celdas tipo-año sin dato se marcan como no reportadas y valen 0. Sucre empieza en 2015.`);
+      }
+      if (d.totales?.[ult] != null) partes.push(`Total ${d.anios[ult]}: ${fmt(d.totales[ult])} t.`);
       $("#notaTipos").textContent = partes.join(" ");
       const vals = n.map((k) => [k, d.series[k][ult]]).filter(([, v]) => v != null);
       dibujar("torta", { type: "doughnut", data: { labels: vals.map(([k]) => k), datasets: [{ data: vals.map(([, v]) => v), backgroundColor: vals.map(([k]) => COLORES[n.indexOf(k) % COLORES.length]) }] } });
@@ -213,14 +228,14 @@ Object.assign(paginas, {
       $("#reporteLink").href = "/reporte/" + c;
       const serie = crudoOn() ? a.y_crudo : a.y;
       $("#notaAnalisis").textContent = crudoOn()
-        ? "Serie original del INE; los vacíos no se imputan."
-        : "Serie tratada; los vacíos interiores se interpolan y el tramo inicial sin dato se recorta.";
-      const flag = a.x.map((m) => a.anomalias.find((z) => z.mes == m));
+        ? "Serie original del INE; los vacíos se muestran como cortes. Los atípicos y la mediana se calculan sobre la serie tratada."
+        : "Hampel local en log: mediana móvil de 13 meses y 4 MAD. La serie tratada no interpola; los valores atípicos se winsorizan con los límites locales.";
+      const flag = a.out_local;
       dibujar("descomp", { type: "line", data: { labels: a.x, datasets: [
         { label: "Real", data: serie, borderColor: COLORES[0], pointRadius: 0, spanGaps: !crudoOn() },
-        { label: "Tendencia", data: a.tendencia, borderColor: COLORES[1], pointRadius: 0 },
+        { label: "Mediana local", data: a.mediana_local, borderColor: COLORES[1], pointRadius: 0 },
         { label: "Atípico", data: serie.map((v, i) => flag[i] ? v : null), borderColor: COLORES[2], backgroundColor: COLORES[2], pointRadius: 5, showLine: false }] }, options: { scales: ejes } });
-      $("#anomalias").innerHTML = a.anomalias.length ? `<table class="hm"><tr><th>Mes</th><th>Toneladas</th><th>Desvíos</th></tr>${a.anomalias.map((z) => `<tr><th>${z.mes}</th><td>${fmt(z.ton)}</td><td>${z.z}</td></tr>`).join("")}</table>` : "<p class='nota'>Sin meses atípicos.</p>";
+      $("#anomalias").innerHTML = a.anomalias.length ? `<table class="hm"><tr><th>Mes</th><th>Toneladas</th><th>Ton final</th><th>Mediana local</th><th>Desvío</th></tr>${a.anomalias.map((z) => `<tr><th>${z.mes}</th><td>${fmt(z.ton)}</td><td>${fmt(z.ton_final)}</td><td>${fmt(z.mediana)}</td><td>${z.desvio_pct} %</td></tr>`).join("")}</table>` : "<p class='nota'>Sin meses atípicos.</p>";
     };
     $("#ciudad").addEventListener("change", run); run();
     const k = await get("/api/correlacion");
@@ -242,7 +257,7 @@ Object.assign(paginas, {
     $("#titulo").textContent = "Reporte: " + c;
     $("#pdf").addEventListener("click", () => window.print());
     const [[s], p] = await Promise.all([get(`/api/serie?cats=${c}&agg=anual`), get(`/api/pronostico?cat=${c}&meses=12`)]);
-    $("#pieReporte").textContent = "Fuente: dataset tratado (Sucre desde 2015; interpolación de vacíos; celdas con menos de 5% de nulos sin imputar).";
+    $("#pieReporte").textContent = "Fuente: datos tratados (Sucre desde 2015; sin interpolación; Cobija excluida de las vistas por ciudad). El Total nacional del INE incluye Cobija.";
     const ult = s.y.at(-1), prev = s.y.at(-2), imax = s.y.indexOf(Math.max(...s.y));
     $("#kpisC").innerHTML = [
       [fmt(ult) + " t", `Recolectado en ${s.x.at(-1)}`],
@@ -251,8 +266,7 @@ Object.assign(paginas, {
     ].map(([a, b]) => `<div class="kpi"><b>${a}</b><span>${b}</span></div>`).join("");
     dibujar("rSerie", { type: "bar", data: { labels: s.x, datasets: [{ label: c + " (t)", data: s.y, backgroundColor: COLORES[0] }] }, options: { scales: ejes } });
     if (c !== "Total") { const d = await get("/api/ciudad-tipo?ciudad=" + c), n = Object.keys(d.series);
-      dibujar("rTipos", { type: "bar", data: { labels: d.anios, datasets: n.map((k, i) => ({ label: k, data: d.series[k], backgroundColor: COLORES[i] })) }, options: { scales: { x: { stacked: true }, y: { stacked: true } } } });
-      if (d.anios_incompletos?.length) $("#pieReporte").textContent += ` Años incompletos en ${c}: ${d.anios_incompletos.join(", ")}.`; }
+      dibujar("rTipos", { type: "bar", data: { labels: d.anios, datasets: n.map((k, i) => ({ label: k, data: d.series[k], backgroundColor: COLORES[i] })) }, options: { scales: { x: { stacked: true }, y: { stacked: true } } } }); }
     dibujar("rPron", { type: "line", data: { labels: [...p.hist.x.slice(-24), ...p.pred.x], datasets: [{ label: "Histórico", data: [...p.hist.y.slice(-24), ...new Array(p.pred.x.length).fill(null)], borderColor: COLORES[0], pointRadius: 0 }, { label: "Pronóstico", data: [...new Array(Math.min(24, p.hist.y.length)).fill(null), ...p.pred.y], borderColor: COLORES[1], borderDash: [6, 4], pointRadius: 0 }] } });
   },
 });

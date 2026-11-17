@@ -1,5 +1,8 @@
 from pathlib import Path
 
+COBIJA = "excluir"
+CORTE = "2023-01-01"
+
 BASE = Path(__file__).parent
 RAW = BASE / "data" / "raw"
 ARCHIVOS = {
