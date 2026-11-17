@@ -152,7 +152,7 @@ def serie_anual(dataset, cats, desde, hasta, crudo=False):
     """Series anuales sin interpolar; se omiten años con menos de 12 meses con dato."""
     out = []
     for c in cats:
-        if _es_cobija(c):
+        if _es_cobija(c) and not crudo:
             continue
         s = serie(dataset, c)
         recorte = None
@@ -170,7 +170,7 @@ def serie_anual(dataset, cats, desde, hasta, crudo=False):
 
 
 def heatmap(dataset, cat, crudo=False):
-    if _es_cobija(cat):
+    if _es_cobija(cat) and not crudo:
         return {"anios": [], "meses": list(range(1, 13)), "valores": []}
     s = serie(dataset, cat)
     if not crudo:
@@ -223,7 +223,7 @@ def faltantes():
         crudo, crudo_ini, crudo_fin = _racha(s_raw)
         if _es_cobija(ciudad):
             tratada = trat_ini = trat_fin = None
-            anios = []
+            anios = sorted(int(a) for a in s_raw.index[s_raw.isna()].year.unique())
             excluida = True
         else:
             s_trat, _ = _ventana(s_raw, ciudad)
@@ -260,7 +260,7 @@ def ciudad_tipo_tratado():
 
 
 def ciudad_tipo(ciudad, crudo=False):
-    if _es_cobija(ciudad):
+    if _es_cobija(ciudad) and not crudo:
         return {"anios": [], "series": {}, "estimado": {}, "faltante": {},
                 "no_reportado": {}, "anios_incompletos": [], "totales": [],
                 "imputado": False, "crudo": crudo, "tratado": not crudo}
@@ -494,17 +494,37 @@ def consistencia():
 
 
 def log_limpieza():
-    """Resumen de limpieza inspirado en el LOG del notebook."""
-    rows = []
+    """Resumen de limpieza alineado con el LOG del notebook."""
+    b = cargar()["ciudades"]
+    a = cargar()["ciudad_tipo"]
+    b_ciudades = b[b.categoria.str.lower() != "total"]
+    a_tipos = a[a.tipo.str.lower() != "total"]
+
+    rows = [
+        {"paso": "L2", "dataset": "A",
+         "problema": "toneladas guardada como texto ('N/D', 'n.d.')",
+         "cantidad": int(a_tipos.ton.isna().sum()),
+         "metodo": "pd.to_numeric(errors='coerce')",
+         "porque": "Son 'no disponible', no cero: deben ser nulos reales."},
+        {"paso": "L2", "dataset": "B",
+         "problema": "toneladas guardada como texto ('N/D', 'n.d.')",
+         "cantidad": int(b_ciudades.ton.isna().sum()),
+         "metodo": "pd.to_numeric(errors='coerce')",
+         "porque": "Son 'no disponible', no cero: deben ser nulos reales."},
+        {"paso": "L3", "dataset": "A, B, C",
+         "problema": "Espacios y mayúsculas en nombres ('SANTA CRUZ ')",
+         "cantidad": "10 ciudades y 5 tipos",
+         "metodo": "str.strip() + str.title(); fecha = año + mes",
+         "porque": "La misma ciudad/tipo debe reconocerse igual en los 3 datasets."},
+    ]
     for r in log_carga():
         if r["duplicados"]:
-            rows.append({"paso": "L1", "dataset": r["dataset"],
-                         "problema": "Filas duplicadas",
+            rows.append({"paso": "L4", "dataset": r["dataset"],
+                         "problema": "Filas duplicadas exactas (todas de 2021)",
                          "cantidad": r["duplicados"],
-                         "metodo": "drop_duplicates",
-                         "porque": "La misma clave repetida duplicaba los totales."})
-    b = cargar()["ciudades"]
-    b_ciudades = b[b.categoria.str.lower() != "total"]
+                         "metodo": "drop_duplicates()",
+                         "porque": "Son copias idénticas: contarlas dos veces inflaría los totales."})
+
     cobija = b_ciudades[b_ciudades.categoria.str.lower() == "cobija"]
     sucre = b_ciudades[(b_ciudades.categoria == "Sucre") &
                        (b_ciudades.fecha < pd.Timestamp(ANIO_CORTE_SUCRE, 1, 1))]
@@ -513,13 +533,16 @@ def log_limpieza():
                               (b_filtrada.fecha < pd.Timestamp(ANIO_CORTE_SUCRE, 1, 1)))]
     nulos_b = int(b_filtrada.ton.isna().sum())
 
-    a = cargar()["ciudad_tipo"]
-    a = a[a.tipo.str.lower() != "total"]
-    a_filtrada = a[a.ciudad.str.lower() != "cobija"]
+    a_filtrada = a_tipos[a_tipos.ciudad.str.lower() != "cobija"]
     a_filtrada = a_filtrada[~((a_filtrada.ciudad == "Sucre") & (a_filtrada.anio < ANIO_CORTE_SUCRE))]
     nulos_a = int(a_filtrada.ton.isna().sum())
 
     rows.extend([
+        {"paso": "L5", "dataset": "A",
+         "problema": "Filas '2024(p)'/'2025(p)' mezcladas en tipo (en la app, filas 'Total')",
+         "cantidad": 20,
+         "metodo": "Excluir de A tratada; el total se recalcula con los 5 tipos",
+         "porque": "Son totales anuales, no un tipo de residuo: duplicarían el total."},
         {"paso": "L8", "dataset": "B", "problema": "Cobija: nulos en bloques de años completos",
          "cantidad": int(len(cobija)), "metodo": "Excluir la ciudad de B, A y vistas por ciudad",
          "porque": "Tiene hasta 43 meses seguidos sin dato; interpolar inventaría una serie."},
@@ -530,12 +553,16 @@ def log_limpieza():
          "cantidad": nulos_b, "metodo": "Eliminar las filas",
          "porque": "Pérdida despreciable y no se inventan datos."},
         {"paso": "L9", "dataset": "A", "problema": "Cobija y Sucre anteriores a 2015",
-         "cantidad": int(len(a) - len(a_filtrada)),
+         "cantidad": int(len(a_tipos) - len(a_filtrada)),
          "metodo": "Mismo criterio que en B",
          "porque": "Cada ciudad debe tratarse igual en A y B."},
         {"paso": "L9", "dataset": "A", "problema": "Tipos sin dato",
          "cantidad": nulos_a, "metodo": "Marcar no_reportado y poner 0",
          "porque": "La suma de tipos reportados coincide con el total de B."},
+        {"paso": "L11", "dataset": "B, C", "problema": "2026 solo tiene 6 meses (enero a junio)",
+         "cantidad": int((b_ciudades.fecha.dt.year == 2026).sum()),
+         "metodo": "Marcar como año parcial (no se elimina)",
+         "porque": "Es información real; no debe compararse con años completos."},
     ])
     return rows
 
@@ -554,5 +581,5 @@ def datos_descarga(dataset, crudo=False):
         d = d[~((d.categoria == "Sucre") & (d.anio < ANIO_CORTE_SUCRE))]
         return d.dropna(subset=["ton"]).reset_index(drop=True)
     if dataset == "ciudad_tipo":
-        return ciudad_tipo_tratado().copy()
+        return ciudad_tipo_tratado().drop(columns=["estimado", "faltante"]).copy()
     return cargar()[dataset].copy()

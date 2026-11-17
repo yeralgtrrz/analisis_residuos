@@ -9,8 +9,6 @@ function dibujar(id, config) {
 }
 const opciones = (arr, sel) => arr.map((v) => `<option ${v == sel ? "selected" : ""}>${v}</option>`).join("");
 const ejes = { y: { ticks: { callback: (v) => fmt(v) } } };
-const crudoOn = () => !!document.querySelector(".crudo")?.checked;
-const qCrudo = () => (crudoOn() ? "&crudo=1" : "");
 
 const paginas = {
   async panel() {
@@ -27,12 +25,10 @@ const paginas = {
     $("#hasta").innerHTML = opciones(meta.anios, meta.anio_ultimo_completo || meta.anios.at(-1));
     $("#anioRank").innerHTML = opciones(meta.anios_completos || meta.anios, k.anio);
     const serie = async () => {
-      const [s] = await get(`/api/serie?cats=${$("#ciudad").value}&desde=${$("#desde").value}&hasta=${$("#hasta").value}&agg=${$("#agg").value}${qCrudo()}`);
-      dibujar("serie", { type: "line", data: { labels: s.x, datasets: [{ label: s.nombre + " (t)", data: s.y, borderColor: COLORES[0], pointRadius: 0, tension: .2, spanGaps: !crudoOn() }] }, options: { scales: ejes } });
+      const [s] = await get(`/api/serie?cats=${$("#ciudad").value}&desde=${$("#desde").value}&hasta=${$("#hasta").value}&agg=${$("#agg").value}`);
+      dibujar("serie", { type: "line", data: { labels: s.x, datasets: [{ label: s.nombre + " (t)", data: s.y, borderColor: COLORES[0], pointRadius: 0, tension: .2, spanGaps: true }] }, options: { scales: ejes } });
       $("#omitidos").textContent = s.omitidos?.length ? `Años omitidos por tener menos de 12 meses: ${s.omitidos.join(", ")}.` : "";
-      $("#notaSerie").textContent = crudoOn()
-        ? "Datos originales del INE; incluye Cobija y los vacíos no se imputan."
-        : `Serie tratada sin interpolación; Sucre empieza en 2015 y Cobija se excluye de las vistas por ciudad.${s.recortado_desde ? ` Recorte aplicado desde ${s.recortado_desde}.` : ""}`;
+      $("#notaSerie").textContent = `Serie tratada sin interpolación; Sucre empieza en 2015 y Cobija se excluye de las vistas por ciudad.${s.recortado_desde ? ` Recorte aplicado desde ${s.recortado_desde}.` : ""}`;
     };
     const rank = async () => {
       const r = await get("/api/ranking?anio=" + $("#anioRank").value);
@@ -50,17 +46,15 @@ const paginas = {
     const comparar = async () => {
       const cats = [...document.querySelectorAll("#chips input:checked")].map((i) => i.value);
       if (!cats.length) return;
-      const data = await get(`/api/serie?cats=${cats.join(",")}&agg=${$("#agg").value}${qCrudo()}`);
+      const data = await get(`/api/serie?cats=${cats.join(",")}&agg=${$("#agg").value}`);
       const orden = alinear(data);
-      dibujar("comparar", { type: "line", data: { labels: orden.x, datasets: orden.series.map((s, i) => ({ label: s.nombre, data: s.y, borderColor: COLORES[i % 10], pointRadius: 0, spanGaps: !crudoOn() })) }, options: { scales: ejes } });
-      $("#notaComparar").textContent = crudoOn()
-        ? "Datos originales del INE; incluye Cobija y los vacíos no se imputan."
-        : "Series tratadas sin interpolación. La suma de ciudades no iguala al Total porque Cobija se excluye de las vistas por ciudad (~1 %).";
+      dibujar("comparar", { type: "line", data: { labels: orden.x, datasets: orden.series.map((s, i) => ({ label: s.nombre, data: s.y, borderColor: COLORES[i % 10], pointRadius: 0, spanGaps: true })) }, options: { scales: ejes } });
+      $("#notaComparar").textContent = "Series tratadas sin interpolación. La suma de ciudades no iguala al Total porque Cobija se excluye de las vistas por ciudad: diferencia media 0,56 % y máxima 2,19 %.";
     };
     $("#chips").addEventListener("change", comparar); $("#agg").addEventListener("change", comparar);
     $("#hmCiudad").innerHTML = opciones(["Total", ...meta.ciudades]);
     const hm = async () => {
-      const h = await get("/api/heatmap?cat=" + $("#hmCiudad").value + qCrudo());
+      const h = await get("/api/heatmap?cat=" + $("#hmCiudad").value);
       const v = h.valores.flat().filter((x) => x != null), mn = Math.min(...v), mx = Math.max(...v);
       const celda = (x) => x == null ? "<td></td>" : `<td style="background:rgba(15,92,110,${(.1 + .8 * (x - mn) / (mx - mn)).toFixed(2)});color:${(x - mn) / (mx - mn) > .55 ? "#fff" : "#14232b"}">${fmt(x)}</td>`;
       $("#heatmap").innerHTML = `<table class="hm"><tr><th></th>${h.meses.map((m) => `<th>${m}</th>`).join("")}</tr>` + h.anios.map((a, i) => `<tr><th>${a}</th>${h.valores[i].map(celda).join("")}</tr>`).join("") + "</table>";
@@ -81,13 +75,11 @@ const paginas = {
       $("#modelos").innerHTML = `<table class="hm"><tr><th>Modelo</th><th>MAE (t)</th><th>MAPE (%)</th></tr>` +
         p.modelos.map((m) => `<tr><th>${m.modelo}${m.modelo === p.metodo ? " ✓" : ""}</th><td>${fmt(m.mae)}</td><td>${m.mape ?? "—"}</td></tr>`).join("") +
         `</table><p class="nota">Backtesting con prueba desde ${p.corte} (${p.backtest.x.length} meses).</p>`;
-      const h = crudoOn() ? p.hist_crudo : p.hist;
-      $("#notaPron").textContent = crudoOn()
-        ? "Serie histórica original del INE; incluye Cobija y los vacíos no se imputan."
-        : "Serie histórica tratada sin interpolación visual; el modelo interpola internamente para regularizar la serie mensual.";
+      const h = p.hist;
+      $("#notaPron").textContent = "Serie histórica tratada sin interpolación visual; el modelo interpola internamente para regularizar la serie mensual.";
       const pad = new Array(h.x.length).fill(null);
       dibujar("pronostico", { type: "line", data: { labels: [...h.x, ...p.pred.x], datasets: [
-        { label: "Histórico", data: [...h.y, ...new Array(p.pred.x.length).fill(null)], borderColor: COLORES[0], pointRadius: 0, spanGaps: !crudoOn() },
+        { label: "Histórico", data: [...h.y, ...new Array(p.pred.x.length).fill(null)], borderColor: COLORES[0], pointRadius: 0, spanGaps: true },
         { label: "Pronóstico", data: [...pad, ...p.pred.y], borderColor: COLORES[1], borderDash: [6, 4], pointRadius: 0 },
         { label: "Mínimo", data: [...pad, ...p.pred.min], borderColor: "#e0a52666", pointRadius: 0, fill: "+1", backgroundColor: "#e0a52622" },
         { label: "Máximo", data: [...pad, ...p.pred.max], borderColor: "#e0a52666", pointRadius: 0 }] }, options: { scales: ejes } });
@@ -203,17 +195,13 @@ Object.assign(paginas, {
   async tipos() {
     await llenarCiudades("ciudad", "La Paz");
     const run = async () => {
-      const d = await get(`/api/ciudad-tipo?ciudad=${$("#ciudad").value}${qCrudo()}`), n = Object.keys(d.series);
+      const d = await get(`/api/ciudad-tipo?ciudad=${$("#ciudad").value}`), n = Object.keys(d.series);
       const base = n.map((k, i) => ({ label: k, data: d.series[k], borderColor: COLORES[i], pointRadius: 2, spanGaps: false }));
       dibujar("evolucion", { type: "line", data: { labels: d.anios, datasets: base }, options: { scales: ejes } });
       const ult = d.anios.length - 1;
       const partes = [];
-      if (d.anios_incompletos?.length) partes.push(`Años incompletos: ${d.anios_incompletos.join(", ")}. Los tipos sin dato quedan vacíos.`);
-      if (crudoOn()) partes.push("Datos originales del INE; los vacíos aparecen como cortes y Sucre no se recorta.");
-      else {
-        const nr = Object.values(d.no_reportado || {}).reduce((a, arr) => a + arr.filter(Boolean).length, 0);
-        partes.push(`Serie tratada sin imputación: ${nr} celdas tipo-año sin dato se marcan como no reportadas y valen 0. Sucre empieza en 2015.`);
-      }
+      const nr = Object.values(d.no_reportado || {}).reduce((a, arr) => a + arr.filter(Boolean).length, 0);
+      partes.push(`Serie tratada sin imputación: ${nr} celdas tipo-año sin dato se marcan como no reportadas y valen 0. Sucre empieza en 2015.`);
       if (d.totales?.[ult] != null) partes.push(`Total ${d.anios[ult]}: ${fmt(d.totales[ult])} t.`);
       $("#notaTipos").textContent = partes.join(" ");
       const vals = n.map((k) => [k, d.series[k][ult]]).filter(([, v]) => v != null);
@@ -226,13 +214,11 @@ Object.assign(paginas, {
     const run = async () => {
       const c = $("#ciudad").value, a = await get("/api/anomalias?cat=" + c);
       $("#reporteLink").href = "/reporte/" + c;
-      const serie = crudoOn() ? a.y_crudo : a.y;
-      $("#notaAnalisis").textContent = crudoOn()
-        ? "Serie original del INE; los vacíos se muestran como cortes. Los atípicos y la mediana se calculan sobre la serie tratada."
-        : "Hampel local en log: mediana móvil de 13 meses y 4 MAD. La serie tratada no interpola; los valores atípicos se winsorizan con los límites locales.";
+      const serie = a.y;
+      $("#notaAnalisis").textContent = "Hampel local en log: mediana móvil de 13 meses y 4 MAD. La serie tratada no interpola; los valores atípicos se winsorizan con los límites locales.";
       const flag = a.out_local;
       dibujar("descomp", { type: "line", data: { labels: a.x, datasets: [
-        { label: "Real", data: serie, borderColor: COLORES[0], pointRadius: 0, spanGaps: !crudoOn() },
+        { label: "Real", data: serie, borderColor: COLORES[0], pointRadius: 0, spanGaps: true },
         { label: "Mediana local", data: a.mediana_local, borderColor: COLORES[1], pointRadius: 0 },
         { label: "Atípico", data: serie.map((v, i) => flag[i] ? v : null), borderColor: COLORES[2], backgroundColor: COLORES[2], pointRadius: 5, showLine: false }] }, options: { scales: ejes } });
       $("#anomalias").innerHTML = a.anomalias.length ? `<table class="hm"><tr><th>Mes</th><th>Toneladas</th><th>Ton final</th><th>Mediana local</th><th>Desvío</th></tr>${a.anomalias.map((z) => `<tr><th>${z.mes}</th><td>${fmt(z.ton)}</td><td>${fmt(z.ton_final)}</td><td>${fmt(z.mediana)}</td><td>${z.desvio_pct} %</td></tr>`).join("")}</table>` : "<p class='nota'>Sin meses atípicos.</p>";
@@ -269,11 +255,6 @@ Object.assign(paginas, {
       dibujar("rTipos", { type: "bar", data: { labels: d.anios, datasets: n.map((k, i) => ({ label: k, data: d.series[k], backgroundColor: COLORES[i] })) }, options: { scales: { x: { stacked: true }, y: { stacked: true } } } }); }
     dibujar("rPron", { type: "line", data: { labels: [...p.hist.x.slice(-24), ...p.pred.x], datasets: [{ label: "Histórico", data: [...p.hist.y.slice(-24), ...new Array(p.pred.x.length).fill(null)], borderColor: COLORES[0], pointRadius: 0 }, { label: "Pronóstico", data: [...new Array(Math.min(24, p.hist.y.length)).fill(null), ...p.pred.y], borderColor: COLORES[1], borderDash: [6, 4], pointRadius: 0 }] } });
   },
-});
-
-document.querySelectorAll(".crudo").forEach((cb) => {
-  cb.checked = localStorage.getItem("crudo") === "1";
-  cb.addEventListener("change", () => { localStorage.setItem("crudo", cb.checked ? "1" : "0"); location.reload(); });
 });
 
 const tema = localStorage.getItem("tema") || (matchMedia("(prefers-color-scheme: dark)").matches ? "oscuro" : "claro");

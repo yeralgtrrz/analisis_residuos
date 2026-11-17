@@ -71,10 +71,14 @@ def test_cobija_fuera_de_vistas_por_ciudad():
     assert c.get("/api/serie?cats=Cobija&agg=mensual").get_json() == []
 
     crudo = c.get("/api/serie?cats=Cobija&agg=mensual&crudo=1").get_json()
-    assert crudo == []
+    assert len(crudo) == 1 and len(crudo[0]["x"]) == 258
     d = an.faltantes()
     cobija = next(x for x in d["rachas"] if x["ciudad"] == "Cobija")
     assert cobija["excluida"] is True and cobija["cruda"] == 43 and cobija["tratada"] is None
+    assert cobija["anios_afectados"] == [2009, 2012, 2013, 2014, 2015]
+    raw_tipo = c.get("/api/ciudad-tipo?ciudad=Cobija&crudo=1").get_json()
+    assert raw_tipo["anios"][0] == 2010 and raw_tipo["crudo"] is True
+    assert any(v is None for s in raw_tipo["series"].values() for v in s)
 
 
 def test_consistencia_y_rachas():
@@ -104,7 +108,7 @@ def test_json_sin_nan():
             "/api/heatmap?cat=Sucre&crudo=1", "/api/ranking?anio=2026",
             "/api/pronostico?cat=Total", "/api/pronostico?cat=Total&modelo=SARIMA",
             "/api/anomalias?cat=Oruro", "/api/correlacion", "/api/cobertura?ciudad=Sucre",
-            "/api/consistencia", "/api/limpieza"]
+            "/api/consistencia", "/api/limpieza", "/api/ciudad-tipo?ciudad=Cobija&crudo=1"]
 
     def falla(x):
         raise ValueError(f"JSON inválido: {x}")
@@ -149,7 +153,15 @@ def test_descargas_tratadas_y_crudas():
     assert "Cobija" in crudo
     assert len(crudo) > len(limpio)
     assert c.get("/api/limpieza.csv").status_code == 200
+    tipos = c.get("/api/descargar/ciudad_tipo.csv").get_data(as_text=True)
+    assert "estimado" not in tipos and "faltante" not in tipos
+    assert "no_reportado" in tipos
     assert c.get("/api/descargar/no_existe.csv").status_code == 404
+
+
+def test_log_limpieza_completo():
+    pasos = {r["paso"] for r in an.log_limpieza()}
+    assert {"L2", "L3", "L4", "L5", "L8", "L9", "L11"} <= pasos
 
 
 def test_endpoints():

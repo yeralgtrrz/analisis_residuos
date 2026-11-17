@@ -28,7 +28,7 @@ def get_serie():
         return jsonify(an.serie_anual(ds, cats, desde, hasta, crudo))
     out = []
     for c in cats:
-        if an._es_cobija(c):
+        if an._es_cobija(c) and not crudo:
             continue
         s = serie(ds, c)
         recorte = None

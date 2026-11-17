@@ -6,7 +6,8 @@ Aplicación Flask que lee los Excel del INE (recolección de residuos 2005-2026)
 
 ```bash
 python -m venv .venv
- .venv/Scripts/activate        # Windows: .venv\Scripts\activate
+source .venv/bin/activate       # Linux/macOS
+.venv\Scripts\activate          # Windows (PowerShell o CMD)
 pip install -r requirements.txt
 python run.py                    # abre http://localhost:5000
 python -m pytest                 # (opcional) corre los tests
@@ -53,7 +54,7 @@ residuos-bolivia/
 - **Duplicados**: se eliminan las filas repetidas al cargar. El dataset de tipos traía 72 claves `(fecha, tipo)` repetidas en 2021; sumarlas duplicaba ese año. La limpieza queda resumida en el LOG de Calidad.
 - **Nombres de tipos**: se unifican `Domiciliaria → Domiciliarios`, `Hospital → Establecimientos de salud` y `Otros(1) → Otros`.
 - **Años incompletos**: los agregados anuales excluyen años con menos de 12 meses de dato (2026 llega hasta junio). La vista mensual sí los muestra y la página Calidad lo explica.
-- **Cobija**: se excluye de las vistas por ciudad (ranking, mapa, comparar, correlación y composición por ciudad) porque tiene hasta 43 meses seguidos sin dato. El **Total** sigue siendo el dato oficial del INE y sí la incluye, por eso la suma de ciudades no iguala al Total (~1 %). En Calidad, la racha de Cobija se muestra como referencia marcada «excluida».
+- **Cobija**: se excluye de las vistas por ciudad (ranking, mapa, comparar, correlación y composición por ciudad) porque tiene hasta 43 meses seguidos sin dato. El **Total** sigue siendo el dato oficial del INE y sí la incluye, por eso la suma de ciudades no iguala al Total: la diferencia media es 0,56 % y la máxima 2,19 %. En Calidad, la racha de Cobija se muestra como referencia marcada «excluida».
 - **Serie B (ciudades)**: sin interpolación. Se recorta Sucre antes de 2015 y se eliminan las filas con `ton` nulo (menos del 5 % de la serie). Los huecos se ven como cortes y la cobertura mensual se reporta en Calidad.
 - **Ciudad × Tipo (A)**: mismo criterio que B (sin Cobija y Sucre desde 2015). Los tipos sin dato se marcan `no_reportado = True`, se rellenan con 0 y no se imputan. Así la suma de tipos reportados coincide con el total de B.
 - **Atípicos**: Hampel local sobre el logaritmo de la serie, ventana de 13 meses y 4 MAD. Se reporta `out_local`, `ton_final`, `mediana_local` y `desvio_pct`; el dato atípico se winsoriza con los límites locales.
@@ -82,13 +83,13 @@ residuos-bolivia/
 |---|---|
 | `/api/meta` | Ciudades, tipos, años y años completos |
 | `/api/kpis` | Indicadores del último año completo |
-| `/api/serie?cats=La Paz,El Alto&desde=2010&hasta=2025&agg=anual` | Series de tiempo tratadas (agregar `crudo=1` para las originales) |
+| `/api/serie?cats=La Paz,El Alto&desde=2010&hasta=2025&agg=anual` | Series de tiempo tratadas; `crudo=1` devuelve las originales, incluida Cobija |
 | `/api/ranking?anio=2024` | Toneladas por ciudad (incluye si el año es parcial) |
 | `/api/composicion` | Toneladas por tipo de procedencia y año (excluye años incompletos) |
-| `/api/heatmap?cat=La Paz` | Matriz mes × año tratada (`crudo=1` para la original) |
+| `/api/heatmap?cat=La Paz` | Matriz mes × año tratada; `crudo=1` devuelve la original, incluida Cobija |
 | `/api/pronostico?cat=Total&meses=12&modelo=auto` | Backtesting, métricas, residuos y proyección; `modelo` puede ser `auto`, `Holt-Winters`, `SARIMA` o `Regresión lineal` |
 | `/api/mapa?anio=2025` | Departamento y burbujas del mapa |
-| `/api/ciudad-tipo?ciudad=La Paz` | Ciudad × tipo anual tratado, con `no_reportado`, `anios_incompletos` y `totales` (`crudo=1` para el original) |
+| `/api/ciudad-tipo?ciudad=La Paz` | Ciudad × tipo anual tratado, con `no_reportado`, `anios_incompletos` y `totales`; `crudo=1` devuelve el original, incluida Cobija |
 | `/api/anomalias?cat=Total` | Hampel local, `ton_final`, mediana, desvíos y serie cruda |
 | `/api/correlacion` | Matriz de correlación entre ciudades |
 | `/api/faltantes` | Meses sin dato por ciudad/año y rachas tratadas/crudas |
