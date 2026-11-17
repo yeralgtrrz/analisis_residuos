@@ -15,7 +15,7 @@ PAGINAS = [("panel", "/", "Panel"), ("comparar", "/comparar", "Comparar"),
            ("pronostico", "/pronostico", "Pronóstico"), ("mapa", "/mapa", "Mapa"), ("tipos", "/tipos", "Por tipo"),
            ("analisis", "/analisis", "Análisis"), ("simulador", "/simulador", "Simulador"),
            ("calidad", "/calidad", "Calidad"), ("aprende", "/aprende", "Aprende"),
-           ("asistente", "/asistente", "Asistente"), ("admin", "/admin", "Datos")]
+           ("admin", "/admin", "Datos")]
 
 COLUMNAS = {"ciudades": {"fecha", "categoria", "ton"}, "ciudades_anual": {"anio", "categoria", "ton"},
             "tipos": {"fecha", "categoria", "ton"}, "tipos_anual": {"anio", "categoria", "ton"},
@@ -46,7 +46,7 @@ def calidad():
     return _p("calidad")
 
 
-for _id in ("mapa", "tipos", "analisis", "simulador", "aprende", "asistente"):
+for _id in ("mapa", "tipos", "analisis", "simulador", "aprende"):
     pages.add_url_rule(f"/{_id}", _id, (lambda i: lambda: _p(i))(_id))
 
 

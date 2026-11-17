@@ -283,8 +283,8 @@ def _mape(real, pred):
 NOMBRES = ("Holt-Winters", "SARIMA", "Regresión lineal")
 
 
-@lru_cache(maxsize=64)
-def pronostico(dataset, cat, meses=12):
+@lru_cache(maxsize=128)
+def pronostico(dataset, cat, meses=12, modelo="auto"):
     s = imputar_serie(serie(dataset, cat))[0]
     raw = serie(dataset, cat)
     s = s.asfreq("MS").interpolate(limit_direction="both")
@@ -301,27 +301,35 @@ def pronostico(dataset, cat, meses=12):
             err = np.asarray(prueba, float) - pred
             errores[nombre] = err
             predicciones[nombre] = pred
+            mape = _mape(prueba, pred)
             comparacion.append({"modelo": nombre, "mae": round(_mae(prueba, pred), 1),
-                                "mape": round(_mape(prueba, pred), 1)})
+                                "mape": round(mape, 1) if np.isfinite(mape) else None})
         except Exception:
             continue
     if not comparacion:
         raise ValueError("Ningún modelo pudo ajustarse a la serie.")
 
-    elegido = min(comparacion, key=lambda m: m["mae"])["modelo"]
+    automatico = min(comparacion, key=lambda m: m["mae"])["modelo"]
+    pedido = modelo if modelo in predicciones else "auto"
+    elegido = automatico if pedido == "auto" else pedido
     pred = _ajustar(elegido, s, meses)
     idx = pd.date_range(s.index[-1] + pd.offsets.MonthBegin(), periods=meses, freq="MS")
     sigma = float(np.nanstd(errores[elegido]))
     if not np.isfinite(sigma) or sigma == 0:
         sigma = float(np.nanstd(s)) or 1.0
 
+    residuos = np.asarray(prueba, float) - np.asarray(predicciones[elegido], float)
     raw = raw.reindex(s.index)
     return {"metodo": elegido,
+            "automatico": pedido == "auto",
+            "modelo_solicitado": modelo,
+            "automatico_metodo": automatico,
             "banda": "error de backtesting",
             "modelos": comparacion,
             "backtest": {"x": prueba.index.strftime("%Y-%m").tolist(),
                          "real": _lista(prueba),
                          "predicciones": {k: _lista(v) for k, v in predicciones.items()}},
+            "residuos": {"x": prueba.index.strftime("%Y-%m").tolist(), "y": _lista(residuos)},
             "hist": {"x": s.index.strftime("%Y-%m").tolist()[-60:], "y": _lista(s)[-60:]},
             "hist_crudo": {"x": raw.index.strftime("%Y-%m").tolist()[-60:],
                            "y": _lista(raw)[-60:]},

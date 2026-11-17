@@ -74,10 +74,13 @@ const paginas = {
     $("#ciudad").innerHTML = opciones(["Total", ...meta.ciudades]);
     const run = async () => {
       $("#metodo").textContent = "Calculando…";
-      const p = await get(`/api/pronostico?cat=${$("#ciudad").value}&meses=${$("#meses").value}`);
-      $("#metodo").textContent = "Modelo elegido: " + p.metodo + " (menor MAE)";
+      const modelo = $("#modelo").value;
+      const p = await get(`/api/pronostico?cat=${$("#ciudad").value}&meses=${$("#meses").value}&modelo=${encodeURIComponent(modelo)}`);
+      $("#metodo").textContent = p.automatico
+        ? (modelo === "auto" ? `Modelo elegido: ${p.metodo} (menor MAE)` : `Modelo no disponible; se usó ${p.metodo}`)
+        : `Modelo forzado: ${p.metodo}`;
       $("#modelos").innerHTML = `<table class="hm"><tr><th>Modelo</th><th>MAE (t)</th><th>MAPE (%)</th></tr>` +
-        p.modelos.map((m) => `<tr><th>${m.modelo}${m.modelo === p.metodo ? " ✓" : ""}</th><td>${fmt(m.mae)}</td><td>${m.mape}</td></tr>`).join("") +
+        p.modelos.map((m) => `<tr><th>${m.modelo}${m.modelo === p.metodo ? " ✓" : ""}</th><td>${fmt(m.mae)}</td><td>${m.mape ?? "—"}</td></tr>`).join("") +
         `</table><p class="nota">Backtesting sobre ${p.backtest.x.length} meses reservados.</p>`;
       const h = crudoOn() ? p.hist_crudo : p.hist;
       $("#notaPron").textContent = crudoOn()
@@ -89,8 +92,33 @@ const paginas = {
         { label: "Pronóstico", data: [...pad, ...p.pred.y], borderColor: COLORES[1], borderDash: [6, 4], pointRadius: 0 },
         { label: "Mínimo", data: [...pad, ...p.pred.min], borderColor: "#e0a52666", pointRadius: 0, fill: "+1", backgroundColor: "#e0a52622" },
         { label: "Máximo", data: [...pad, ...p.pred.max], borderColor: "#e0a52666", pointRadius: 0 }] }, options: { scales: ejes } });
+
+      const bt = p.backtest;
+      const colores = { "Holt-Winters": COLORES[0], "SARIMA": COLORES[1], "Regresión lineal": COLORES[2] };
+      const predicciones = Object.entries(bt.predicciones).map(([nombre, valores], i) => ({
+        label: nombre, data: valores, borderColor: colores[nombre] || COLORES[(i + 3) % COLORES.length],
+        borderWidth: nombre === p.metodo ? 2.5 : 1.5, borderDash: nombre === p.metodo ? [] : [5, 4],
+        pointRadius: 2, tension: .2
+      }));
+      dibujar("backtest", { type: "line", data: { labels: bt.x, datasets: [
+        { label: "Real", data: bt.real, borderColor: COLORES[8], borderWidth: 2.5, pointRadius: 2, tension: .2 },
+        ...predicciones] }, options: { scales: ejes } });
+
+      const nombres = p.modelos.map((m) => m.modelo);
+      dibujar("metricas", { type: "bar", data: { labels: nombres, datasets: [
+        { label: "MAE (t)", data: p.modelos.map((m) => m.mae), backgroundColor: COLORES[0], yAxisID: "y" },
+        { label: "MAPE (%)", data: p.modelos.map((m) => m.mape), backgroundColor: COLORES[1], yAxisID: "y1" }] },
+        options: { scales: { y: { position: "left", ticks: { callback: (v) => fmt(v) } },
+          y1: { position: "right", grid: { drawOnChartArea: false } } } } });
+
+      const res = p.residuos;
+      dibujar("residuos", { type: "bar", data: { labels: res.x, datasets: [{
+        label: `Residuos ${p.metodo} (t)`, data: res.y,
+        backgroundColor: res.y.map((v) => v == null ? "transparent" : (v >= 0 ? COLORES[3] : COLORES[2])) }] },
+        options: { scales: ejes } });
     };
     $("#ciudad").addEventListener("change", run); $("#meses").addEventListener("change", run);
+    $("#modelo").addEventListener("change", run);
     run();
   },
   async calidad() {
@@ -208,34 +236,6 @@ Object.assign(paginas, {
         .map(([a, b]) => `<div class="kpi"><b>${a}</b><span>${b}</span></div>`).join("");
     };
     $("#sliders").addEventListener("input", calc); $("#camion").addEventListener("input", calc); calc();
-  },
-  async asistente() {
-    const charla = $("#charla");
-    const add = (texto, clase) => {
-      const p = document.createElement("p");
-      p.className = "burbuja " + clase;
-      p.textContent = texto;
-      charla.appendChild(p);
-      charla.scrollTop = charla.scrollHeight;
-    };
-    const preguntar = async () => {
-      const q = $("#pregunta").value.trim();
-      if (!q) return;
-      add(q, "yo");
-      $("#pregunta").value = "";
-      $("#pregunta").disabled = true;
-      try {
-        const r = await fetch("/api/asistente", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pregunta: q }) }).then((x) => x.json());
-        add(r.respuesta, "ia");
-      } catch (e) {
-        add("No pude responder en este momento.", "ia");
-      } finally {
-        $("#pregunta").disabled = false;
-        $("#pregunta").focus();
-      }
-    };
-    $("#enviar").addEventListener("click", preguntar);
-    $("#pregunta").addEventListener("keydown", (e) => { if (e.key === "Enter") preguntar(); });
   },
   async reporte() {
     const c = decodeURIComponent(document.body.dataset.ciudad);

@@ -74,7 +74,8 @@ def test_json_sin_nan():
             "/api/ciudad-tipo?ciudad=Cobija", "/api/serie?cats=Sucre&agg=mensual",
             "/api/serie?cats=Cobija&agg=mensual&crudo=1", "/api/heatmap?cat=Total",
             "/api/heatmap?cat=Sucre&crudo=1", "/api/ranking?anio=2026",
-            "/api/pronostico?cat=Total", "/api/anomalias?cat=Oruro", "/api/correlacion"]
+            "/api/pronostico?cat=Total", "/api/pronostico?cat=Total&modelo=SARIMA",
+            "/api/anomalias?cat=Oruro", "/api/correlacion"]
 
     def falla(x):
         raise ValueError(f"JSON inválido: {x}")
@@ -100,18 +101,25 @@ def test_pronostico_backtesting():
     assert p["banda"] == "error de backtesting"
     assert len(p["pred"]["x"]) == 12
     assert all(m["mae"] >= 0 for m in p["modelos"])
+    assert len(p["residuos"]["y"]) == len(p["backtest"]["x"]) == 12
+    assert set(p["backtest"]["predicciones"]) == {m["modelo"] for m in p["modelos"]}
+
+    forzado = an.pronostico("ciudades", "Total", 12, "SARIMA")
+    assert forzado["metodo"] == "SARIMA" and forzado["automatico"] is False
+    assert forzado["automatico_metodo"] in set(p["backtest"]["predicciones"])
+    assert an.pronostico("ciudades", "Total", 12, "No existe")["automatico"] is True
 
 
 def test_endpoints():
     c = create_app().test_client()
-    for url in ["/", "/comparar", "/pronostico", "/calidad", "/admin", "/asistente",
+    for url in ["/", "/comparar", "/pronostico", "/calidad", "/admin",
                 "/api/meta", "/api/kpis", "/api/ranking?anio=2024",
                 "/api/composicion", "/api/heatmap?cat=La Paz", "/api/faltantes", "/api/imputacion",
                 "/api/serie?cats=La Paz,El Alto&agg=anual", "/api/serie?cats=Sucre&agg=anual",
                 "/api/serie?cats=Sucre&agg=anual&crudo=1",
-                "/api/pronostico?cat=Total", "/api/descargar/tipos.csv", "/mapa", "/tipos", "/analisis",
+                "/api/pronostico?cat=Total", "/api/pronostico?cat=Total&modelo=SARIMA",
+                "/api/descargar/tipos.csv", "/mapa", "/tipos", "/analisis",
                 "/simulador", "/aprende", "/reporte/Sucre", "/api/mapa", "/api/ciudad-tipo?ciudad=La Paz",
                 "/api/ciudad-tipo?ciudad=Sucre", "/api/ciudad-tipo?ciudad=Sucre&crudo=1",
                 "/api/anomalias?cat=Oruro", "/api/correlacion", "/static/data/bolivia.json"]:
         assert c.get(url).status_code == 200, url
-    assert c.post("/api/asistente", json={"pregunta": "¿ciudad con más residuos?"}).status_code == 200

@@ -3,7 +3,6 @@ import io
 from flask import Blueprint, jsonify, request, send_file
 
 from ..services import analytics as an
-from ..services import asistente as asis
 from ..services.data_loader import cargar, serie
 
 api = Blueprint("api", __name__)
@@ -61,7 +60,8 @@ def heatmap():
 @api.get("/pronostico")
 def pronostico():
     return jsonify(an.pronostico(request.args.get("dataset", "ciudades"),
-                                 request.args.get("cat", "Total"), int(request.args.get("meses", 12))))
+                                 request.args.get("cat", "Total"), int(request.args.get("meses", 12)),
+                                 request.args.get("modelo", "auto")))
 
 
 @api.get("/faltantes")
@@ -111,9 +111,3 @@ def anomalias():
 @api.get("/correlacion")
 def correlacion():
     return jsonify(an.correlacion())
-
-
-@api.post("/asistente")
-def asistente():
-    data = request.get_json(silent=True) or {}
-    return jsonify(asis.responder(data.get("pregunta", "")))
