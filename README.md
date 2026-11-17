@@ -30,7 +30,7 @@ residuos-bolivia/
 ├── app/
 │   ├── __init__.py         create_app(): registra las rutas
 │   ├── routes/
-│   │   ├── pages.py        Páginas HTML, subida de Excel y reporte
+│   │   ├── pages.py        Páginas HTML y reporte
 │   │   └── api.py          API JSON /api/* y descarga CSV/Excel
 │   ├── services/
 │   │   ├── data_loader.py  Lee los Excel, normaliza y elimina duplicados
@@ -40,8 +40,7 @@ residuos-bolivia/
 │   │   ├── panel.html      KPIs, serie de tiempo, ranking, composición por tipo
 │   │   ├── comparar.html   Ciudad vs. ciudad y heatmap mes × año
 │   │   ├── pronostico.html Proyección con backtesting y banda de error real
-│   │   ├── calidad.html    Mapa de faltantes y datos estimados por ciudad
-│   │   └── admin.html      Subida y validación de nuevos Excel
+│   │   └── calidad.html    Mapa de faltantes y datos estimados por ciudad
 │   └── static/
 │       ├── css/styles.css  Estilos (tema claro/oscuro y estilos de impresión)
 │       └── js/app.js       Lógica de cada página (fetch a la API + Chart.js)
@@ -70,7 +69,6 @@ residuos-bolivia/
 | Aprende | Guía de separación de residuos |
 | Reporte | `/reporte/<ciudad>` con KPIs, series y pronóstico; botón «Descargar PDF» (usá Guardar como PDF del navegador) |
 | Calidad de datos | Meses sin dato por ciudad/año y datos estimados por ciudad; en Por tipo se explican los umbrales y las celdas sin imputar |
-| Datos | Subida de nuevos Excel con clave de administración, validación y respaldo automático |
 | Modo oscuro | Botón ◐ en la cabecera; respeta `prefers-color-scheme` y recuerda la elección |
 
 ## Endpoints de la API
@@ -91,17 +89,6 @@ residuos-bolivia/
 | `/api/faltantes` | Meses sin dato por ciudad/año |
 | `/api/imputacion?ciudad=Sucre` | Serie estimada, recorte y cantidad de meses imputados |
 | `/api/descargar/<ciudades\|tipos\|ciudad_tipo>.<csv\|xlsx>` | Descarga de datos limpios |
-
-## Variables de entorno
-
-| Variable | Para qué |
-|---|---|
-| `ADMIN_PASSWORD` | Habilita la subida de Excel en `/admin`. Sin ella, la subida queda deshabilitada. |
-
-```powershell
-$env:ADMIN_PASSWORD = "una-clave-larga"
-python run.py
-```
 
 ## Para ampliarla (ideas pendientes)
 

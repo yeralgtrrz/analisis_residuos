@@ -112,7 +112,7 @@ def test_pronostico_backtesting():
 
 def test_endpoints():
     c = create_app().test_client()
-    for url in ["/", "/comparar", "/pronostico", "/calidad", "/admin",
+    for url in ["/", "/comparar", "/pronostico", "/calidad",
                 "/api/meta", "/api/kpis", "/api/ranking?anio=2024",
                 "/api/composicion", "/api/heatmap?cat=La Paz", "/api/faltantes", "/api/imputacion",
                 "/api/serie?cats=La Paz,El Alto&agg=anual", "/api/serie?cats=Sucre&agg=anual",
@@ -123,3 +123,9 @@ def test_endpoints():
                 "/api/ciudad-tipo?ciudad=Sucre", "/api/ciudad-tipo?ciudad=Sucre&crudo=1",
                 "/api/anomalias?cat=Oruro", "/api/correlacion", "/static/data/bolivia.json"]:
         assert c.get(url).status_code == 200, url
+
+
+def test_admin_eliminado():
+    c = create_app().test_client()
+    assert c.get("/admin").status_code == 404
+    assert c.post("/admin").status_code == 404
