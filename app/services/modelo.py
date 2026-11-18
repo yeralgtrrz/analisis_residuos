@@ -8,7 +8,7 @@ import pandas as pd
 
 from config import BASE, CORTE
 
-from .analytics import _sin_cobija, preparar_serie
+from .analytics import preparar_serie
 from .data_loader import cargar, serie
 
 FEATURES = ["lag1", "lag12", "mm3", "mm12", "t"]
@@ -23,7 +23,7 @@ CORTE_FECHA = pd.Timestamp(CORTE)
 
 
 def _ciudades():
-    d = _sin_cobija(cargar()["ciudades"])
+    d = cargar()["ciudades"]
     return sorted(c for c in d.categoria.unique() if str(c).lower() != "total")
 
 
@@ -283,8 +283,8 @@ def alerta(ciudad):
     if clf is None:
         return None
     s = _serie_ciudad(ciudad)
-    values = s.dropna().astype(float).tolist()
-    if len(values) < 13:
+    values = s.astype(float).tolist()
+    if len(values) < 13 or s.tail(12).isna().any():
         return None
     p, _ = _probabilidad(clf, s, values)
     return {"ciudad": ciudad, "probabilidad": round(p * 100, 1),
@@ -313,9 +313,9 @@ def predecir(ciudad, meses=12):
     if ciudad not in modelo["ciudades"]:
         raise ValueError("Ciudad no válida para el modelo.")
     s = _serie_ciudad(ciudad)
-    values = s.dropna().astype(float).tolist()
-    if len(values) < 13:
-        raise ValueError("La serie es demasiado corta para predecir.")
+    values = s.astype(float).tolist()
+    if len(values) < 13 or s.tail(12).isna().any():
+        raise ValueError("Se necesitan 12 meses recientes consecutivos para predecir.")
     fechas = pd.date_range(s.index[-1] + pd.offsets.MonthBegin(), periods=int(meses), freq="MS")
     pred = []
     for h, fecha in enumerate(fechas):
@@ -334,7 +334,7 @@ def predecir(ciudad, meses=12):
             "rmse": round(float(cfg["metricas"]["rmse"]), 1) if cfg else None,
             "r2": cfg["metricas"]["r2"] if cfg else None,
             "historico": {"x": hist.index.strftime("%Y-%m").tolist(),
-                          "y": [round(float(v), 1) for v in hist.values]},
+                          "y": [round(float(v), 1) if pd.notna(v) else None for v in hist]},
             "pred": {"x": fechas.strftime("%Y-%m").tolist(), "y": [round(v, 1) for v in y],
                      "min": [round(v, 1) for v in low], "max": [round(v, 1) for v in high]},
             "alerta": alert,

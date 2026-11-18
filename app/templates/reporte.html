@@ -1,7 +1,28 @@
 {% extends "base.html" %}
 {% block contenido %}
-<section class="card"><div class="controles"><h2 id="titulo"></h2><button id="pdf" type="button">Descargar PDF</button></div>
-<div id="kpisC" class="kpis"></div><canvas id="rSerie" height="90"></canvas>
-<div class="dos"><canvas id="rTipos"></canvas><canvas id="rPron"></canvas></div>
-<p class="nota" id="pieReporte"></p></section>
+<section class="card">
+  <div class="controles"><h2 id="titulo"></h2><button id="pdf" type="button">Descargar PDF</button></div>
+  <div id="kpisC" class="kpis"></div>
+  <figure class="grafica">
+    <canvas id="rSerie" height="90" role="img" aria-label="Toneladas recolectadas por año"></canvas>
+    <figcaption class="reporte-lectura">
+      <strong>Evolución anual</strong>
+      <span id="resumenSerie"></span>
+    </figcaption>
+  </figure>
+  <div class="dos">
+    <figure class="grafica">
+      <canvas id="rTipos" role="img" aria-label="Desglose por procedencia de los residuos"></canvas>
+      <figcaption class="reporte-lectura">
+        <strong>Procedencia de los residuos</strong>
+        <span id="resumenTipos"></span>
+      </figcaption>
+    </figure>
+    <figure class="grafica" id="figuraPronReporte">
+      <canvas id="rPron" role="img" aria-label="Histórico y pronóstico de recolección"></canvas>
+      <figcaption>Las líneas muestran las toneladas observadas y la proyección para los próximos 12 meses.</figcaption>
+    </figure>
+  </div>
+  <p class="nota" id="pieReporte"></p>
+</section>
 {% endblock %}

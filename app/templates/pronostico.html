@@ -13,19 +13,20 @@
     </select></label>
     <span id="metodo" class="nota"></span>
   </div>
-  <canvas id="pronostico" height="110"></canvas>
+  <figure class="grafica"><canvas id="pronostico" height="110"></canvas><figcaption>La banda alrededor de la proyección se calcula con los errores observados en la prueba.</figcaption></figure>
   <p class="nota" id="notaPron"></p>
 
   <h2>Backtesting: prueba desde 2023</h2>
   <div class="dos">
-    <div><h3>Real contra la predicción de cada modelo</h3><canvas id="backtest" height="90"></canvas></div>
-    <div><h3>MAE y MAPE por modelo</h3><canvas id="metricas" height="90"></canvas></div>
+    <div><h3>Real contra la predicción de cada modelo</h3><figure class="grafica"><canvas id="backtest" height="90"></canvas><figcaption>La línea real se compara con las predicciones que hizo cada modelo para el período de prueba.</figcaption></figure></div>
+    <div><h3>MAE y MAPE por modelo</h3><figure class="grafica"><canvas id="metricas" height="90"></canvas><figcaption>El MAE se lee en toneladas y el MAPE en porcentaje. Valores menores indican menos error.</figcaption></figure></div>
   </div>
   <h2>Residuos del modelo elegido</h2>
-  <canvas id="residuos" height="70"></canvas>
-  <p class="nota">El backtesting y los residuos usan la serie tratada, sin imputación y con entrenamiento anterior a 2023. Las barras de MAE se leen en toneladas (eje izquierdo) y las de MAPE en porcentaje (eje derecho). El Total es el dato oficial del INE e incluye Cobija; las ciudades excluyen Cobija.</p>
+  <figure class="grafica"><canvas id="residuos" height="70"></canvas><figcaption>Las barras muestran la diferencia entre las toneladas observadas y las estimadas en cada mes.</figcaption></figure>
+  <p class="nota">Los errores se calculan sobre los meses observados desde 2023. El modelo regulariza los meses faltantes durante el ajuste. Las barras de MAE se leen en toneladas (eje izquierdo) y las de MAPE en porcentaje (eje derecho). El Total es el dato oficial del INE e incluye Cobija.</p>
 
   <div id="modelos" class="scroll"></div>
   <p class="nota">Se prueban cuatro modelos y se elige el de menor MAE. También podés forzar uno para comparar sus proyecciones. La banda de confianza usa el error real del backtesting (no los residuos del ajuste), por eso es menos optimista.</p>
 </section>
+{% include "colab/pronostico.html" %}
 {% endblock %}

@@ -4,12 +4,14 @@
   <h2>Ciudad contra ciudad</h2>
   <div class="controles"><div id="chips" class="chips"></div>
     <label>Vista <select id="agg"><option value="anual">Anual</option><option value="mensual">Mensual</option></select></label></div>
-  <canvas id="comparar" height="110"></canvas>
+  <figure class="grafica"><canvas id="comparar" height="110"></canvas><figcaption>Cada línea muestra las toneladas recolectadas en una de las ciudades seleccionadas.</figcaption></figure>
   <p class="nota" id="notaComparar"></p>
-  <p class="nota">Cobija se excluye de la comparación entre ciudades: la diferencia media frente al Total nacional es 0,56 % y la máxima 2,19 %.</p>
 </section>
 <section class="card">
-  <h2>Estacionalidad (mes × año) <select id="hmCiudad"></select></h2>
-  <div id="heatmap" class="scroll"></div>
+  <h2>Estacionalidad (mes × año) <select id="hmCiudad" aria-label="Ciudad para el mapa de estacionalidad"></select></h2>
+  <figure class="grafica estacionalidad">
+    <div id="heatmap" class="scroll marco-tabla"></div>
+    <figcaption>Cada fila representa un año y las columnas numeradas del 1 al 12 corresponden a enero–diciembre. Las celdas más oscuras indican más toneladas recolectadas en la serie seleccionada. Lee una columna de arriba abajo para comparar el mismo mes entre años. Las celdas vacías indican meses sin registro.</figcaption>
+  </figure>
 </section>
 {% endblock %}

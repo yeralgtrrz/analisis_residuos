@@ -1,11 +1,110 @@
 {% extends "base.html" %}
 {% block contenido %}
-<section class="card prosa"><h2>Cómo separar tus residuos</h2>
-<p><b>Orgánicos:</b> restos de comida y cáscaras. Sirven para compost.</p>
-<p><b>Reciclables:</b> papel, cartón, vidrio, latas y plásticos limpios y secos.</p>
-<p><b>No reciclables:</b> pañales, papel higiénico y envolturas sucias.</p>
-<p><b>Peligrosos:</b> pilas, medicinas vencidas y aceite usado. No van en la basura común.</p></section>
-<section class="card prosa"><h2>Cómo leer esta plataforma</h2>
-<p>Los residuos domiciliarios son la mayor parte de lo que se recolecta, y por eso reducirlos tiene el mayor efecto.</p>
-<p>Las cifras son toneladas que recolectan los municipios, no lo que se genera. Lo que no se recolecta no aparece.</p></section>
+<section class="card aprende-portada">
+  <h2>Cómo gestionar mejor la basura en casa</h2>
+  <p>Reduce lo que desechas, separa los residuos donde se generan y consulta dónde entregarlos en tu municipio.</p>
+  <div class="aprende-accesos">
+    <a href="#separar">Qué va en cada recipiente</a>
+    <a href="#plan-semanal">Plantilla semanal</a>
+    <a href="#video-corto">Guion de 45 segundos</a>
+  </div>
+</section>
+
+<section class="card aprende-bloque" id="separar">
+  <h2>Separa los residuos desde casa</h2>
+  <div class="aprende-residuos">
+    <article class="aprende-residuo" data-residuo="organicos">
+      <h3>Orgánicos</h3>
+      <p>Cáscaras de frutas y verduras, borra de café y hojas secas. Si haces compost en casa, evita carne, huesos y lácteos.</p>
+    </article>
+    <article class="aprende-residuo" data-residuo="reciclables">
+      <h3>Reciclables</h3>
+      <p>Papel, cartón, latas, botellas y frascos que acepte tu recolector. Vacía los envases y conserva el papel y el cartón secos.</p>
+    </article>
+    <article class="aprende-residuo" data-residuo="comunes">
+      <h3>Desechos comunes</h3>
+      <p>Pañales, papel higiénico usado y envolturas sucias que el servicio local no reciba para reciclaje. Sácalos en el horario de recolección.</p>
+    </article>
+    <article class="aprende-residuo" data-residuo="especiales">
+      <h3>Residuos especiales</h3>
+      <p>Separa pilas, aparatos eléctricos y restos de pintura. Consulta al municipio o al gestor dónde recibe cada material.</p>
+    </article>
+  </div>
+</section>
+
+<section class="card aprende-bloque">
+  <h2>Tres hábitos para generar menos residuos</h2>
+  <ul class="aprende-habitos">
+    <li><strong>Revisa lo que ya tienes.</strong> Mira la despensa antes de comprar y planifica una comida para aprovechar las sobras.</li>
+    <li><strong>Reutiliza lo que está en buen estado.</strong> Lleva una bolsa y una botella reutilizables. Repara o dona los objetos que todavía se puedan usar.</li>
+    <li><strong>Organiza la entrega.</strong> Etiqueta tus recipientes y anota qué materiales recibe el servicio de tu zona, en qué lugar y en qué horario.</li>
+  </ul>
+</section>
+
+<section class="card aprende-bloque aprende-plan" id="plan-semanal">
+  <div class="aprende-plan-cabecera">
+    <div>
+      <h2>Plantilla semanal para el hogar</h2>
+      <p class="nota">Completa los campos y marca las tareas a medida que las hagas.</p>
+    </div>
+    <button type="button" id="imprimirPlan">Imprimir plantilla</button>
+  </div>
+  <div class="aprende-campos">
+    <label>Semana del <input type="text" placeholder="Ej. 23 al 29 de noviembre"></label>
+    <label>Municipio o barrio <input type="text" placeholder="Ej. Cobija"></label>
+    <label>Mi meta de esta semana <input type="text" placeholder="Ej. Usar una bolsa reutilizable"></label>
+    <label>Lugar y horario de entrega <input type="text" placeholder="Ej. Punto de recepción y horario"></label>
+  </div>
+  <fieldset class="aprende-tareas">
+    <legend>Lista de tareas</legend>
+    <label><input type="checkbox"> Etiqueté los recipientes.</label>
+    <label><input type="checkbox"> Confirmé qué recibe mi recolector.</label>
+    <label><input type="checkbox"> Aparté los residuos especiales para su entrega.</label>
+  </fieldset>
+</section>
+
+<section class="card aprende-bloque" id="video-corto">
+  <h2>Guion para un video de 45 segundos</h2>
+  <p class="nota">Puedes grabarlo con el celular en cuatro tomas. Usa recipientes rotulados y objetos limpios para la demostración.</p>
+  <ol class="aprende-guion">
+    <li>
+      <time datetime="PT0S">0–7 s</time>
+      <h3>Presenta la pregunta</h3>
+      <p><strong>En cámara</strong> Una cáscara, una lata vacía y un pañal limpio.</p>
+      <p><strong>Voz</strong> «Antes de tirarlos, ¿sabes dónde va cada uno?»</p>
+    </li>
+    <li>
+      <time datetime="PT7S">7–20 s</time>
+      <h3>Muestra la separación</h3>
+      <p><strong>En cámara</strong> Coloca cada objeto en su recipiente etiquetado.</p>
+      <p><strong>Voz</strong> «La cáscara va con los orgánicos. La lata, con los reciclables si tu recolector la acepta. El pañal va con los desechos comunes».</p>
+    </li>
+    <li>
+      <time datetime="PT20S">20–33 s</time>
+      <h3>Explica la entrega especial</h3>
+      <p><strong>En cámara</strong> Muestra una etiqueta con la palabra «Pilas».</p>
+      <p><strong>Voz</strong> «Las pilas se separan. Pregunta en tu municipio dónde puedes entregarlas».</p>
+    </li>
+    <li>
+      <time datetime="PT33S">33–45 s</time>
+      <h3>Cierra con una acción</h3>
+      <p><strong>En cámara</strong> Muestra los recipientes ya rotulados y una bolsa reutilizable.</p>
+      <p><strong>Voz</strong> «Empieza hoy. Etiqueta tus recipientes y lleva una bolsa reutilizable en tu próxima compra».</p>
+    </li>
+  </ol>
+</section>
+
+<section class="card aprende-bloque">
+  <h2>Cómo leer las cifras de la plataforma</h2>
+  <p>Las gráficas cuentan las toneladas que recolectan los municipios. La generación total de residuos también abarca los que quedan fuera de la recolección.</p>
+  <details class="aprende-fuentes">
+    <summary>Fuentes para la guía</summary>
+    <ul>
+      <li><a href="https://www.epa.gov/recycle/frequent-questions-recycling">Preparación y entrega de reciclables</a></li>
+      <li><a href="https://www.epa.gov/sustainable-management-food/approaches-composting">Compostaje doméstico y comunitario</a></li>
+      <li><a href="https://www.epa.gov/hw/household-hazardous-waste-hhw">Manejo de residuos domésticos especiales</a></li>
+      <li><a href="https://www.epa.gov/climate-change/what-you-can-do-about-climate-change-waste">Reducción y reutilización en el hogar</a></li>
+    </ul>
+  </details>
+</section>
 {% endblock %}

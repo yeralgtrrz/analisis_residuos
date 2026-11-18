@@ -3,20 +3,30 @@
 <section class="card">
   <div class="controles">
     <label>Ciudad <select id="ciudad"></select></label>
-    <label>Meses a predecir <select id="meses">
+    <label>Horizonte de la gráfica (meses) <select id="meses">
       <option value="3">3</option><option value="6">6</option>
       <option value="12" selected>12</option><option value="24">24</option>
     </select></label>
   </div>
   <div id="alertaPred" class="alerta-pico"></div>
   <div id="kpisPred" class="kpis"></div>
-  <canvas id="prediccion" height="110"></canvas>
-  <p class="nota" id="notaPred"></p>
-  <div id="tablaPred" class="scroll"></div>
+  <figure class="grafica prediccion-grafica">
+    <canvas id="prediccion" height="110" role="img" aria-label="Serie mensual observada y proyección de toneladas con su margen de error"></canvas>
+    <figcaption>La línea proyecta las toneladas mensuales de la ciudad y la banda muestra el margen estimado de error.</figcaption>
+  </figure>
+  <p class="nota prediccion-nota" id="notaPred"></p>
 </section>
-<section class="card prosa">
+<section class="card prediccion-resultados" aria-labelledby="tituloTablaPred">
+  <h2 id="tituloTablaPred">Predicción por mes</h2>
+  <div class="controles prediccion-filtro">
+    <label>Año <select id="anioTablaPred" disabled></select></label>
+  </div>
+  <p class="nota prediccion-nota">La tabla muestra de enero a diciembre. Los límites mínimo y máximo corresponden a los meses proyectados.</p>
+  <div id="tablaPred" class="scroll" aria-busy="true"></div>
+</section>
+<section class="card prosa prediccion-metodo">
   <h2>Cómo se calcula</h2>
   <p>El modelo es una regresión lineal entrenada con la serie tratada de cada ciudad y cinco variables: el mes anterior, el mismo mes del año pasado, el promedio de los últimos 3 meses, el promedio de los últimos 12 meses y el tiempo. Para los meses futuros, cada predicción pasa a formar parte de la historia y alimenta la siguiente.</p>
-  <p>El error típico es el MAE del período de prueba 2023–2026. La banda usa 1,96 veces el RMSE de esa misma prueba. Las cifras son toneladas recolectadas; Cobija queda fuera de las vistas por ciudad.</p>
+  <p>El error típico es el MAE del período de prueba 2023–2026. La banda usa 1,96 veces el MAE de esa misma prueba. Las cifras son toneladas recolectadas.</p>
 </section>
 {% endblock %}

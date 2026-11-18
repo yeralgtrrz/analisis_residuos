@@ -1,0 +1,70 @@
+<section class="card evidencia">
+  <h2>Gráficas del Colab</h2>
+  <p class="nota">Figuras guardadas con los filtros y modelos usados al ejecutar el notebook.</p>
+  <div class="dos">
+    <figure class="grafica">
+      <img src="{{ url_for('static', filename='img/colab/figura-122-1.png') }}" alt="Codificación de la ciudad" width="603" height="355" loading="lazy">
+      <figcaption><strong>Codificación de la ciudad</strong>El MAE de prueba mide cuánto cambia el error con distintas formas de representar la ciudad.</figcaption>
+    </figure>
+    <figure class="grafica">
+      <img src="{{ url_for('static', filename='img/colab/figura-127-1.png') }}" alt="Correlación de variables con toneladas" width="716" height="394" loading="lazy">
+      <figcaption><strong>Correlación de variables con toneladas</strong>El coeficiente de Pearson resume la relación lineal con las toneladas mensuales.</figcaption>
+    </figure>
+    <figure class="grafica">
+      <img src="{{ url_for('static', filename='img/colab/figura-152-1.png') }}" alt="Correlación entre variables candidatas" width="948" height="801" loading="lazy">
+      <figcaption><strong>Correlación entre variables candidatas</strong>El mapa de calor muestra qué variables continuas se mueven juntas durante el entrenamiento.</figcaption>
+    </figure>
+    <figure class="grafica">
+      <img src="{{ url_for('static', filename='img/colab/figura-155-1.png') }}" alt="Importancia en Random Forest" width="821" height="374" loading="lazy">
+      <figcaption><strong>Importancia en Random Forest</strong>Las barras ordenan las variables según la importancia que les asignó el bosque en entrenamiento.</figcaption>
+    </figure>
+    <figure class="grafica">
+      <img src="{{ url_for('static', filename='img/colab/figura-161-1.png') }}" alt="Error por conjunto de variables" width="799" height="430" loading="lazy">
+      <figcaption><strong>Error por conjunto de variables</strong>El MAE mide el error típico en toneladas para cada conjunto de entradas probado.</figcaption>
+    </figure>
+    <figure class="grafica">
+      <img src="{{ url_for('static', filename='img/colab/figura-165-1.png') }}" alt="Error por modelo y ciudad" width="1014" height="394" loading="lazy">
+      <figcaption><strong>Error por modelo y ciudad</strong>Las barras comparan el MAE de cada ciudad en meses reservados para prueba.</figcaption>
+    </figure>
+    <figure class="grafica">
+      <img src="{{ url_for('static', filename='img/colab/figura-184-1.png') }}" alt="Regresión mensual por ciudad" width="889" height="390" loading="lazy">
+      <figcaption><strong>Regresión mensual por ciudad</strong>El MAE compara los modelos ajustados y evaluados en orden cronológico.</figcaption>
+    </figure>
+    <figure class="grafica">
+      <img src="{{ url_for('static', filename='img/colab/figura-184-2.png') }}" alt="Importancia por permutación" width="790" height="490" loading="lazy">
+      <figcaption><strong>Importancia por permutación</strong>Las barras muestran cuánto cambia el desempeño al desordenar una entrada del mejor modelo del Colab.</figcaption>
+    </figure>
+    <figure class="grafica">
+      <img src="{{ url_for('static', filename='img/colab/figura-168-1.png') }}" alt="Distribución de toneladas" width="695" height="332" loading="lazy">
+      <figcaption><strong>Distribución de toneladas</strong>El histograma muestra la frecuencia de los valores mensuales antes de definir los picos.</figcaption>
+    </figure>
+    <figure class="grafica">
+      <img src="{{ url_for('static', filename='img/colab/figura-171-1.png') }}" alt="Dos definiciones de mes pico" width="1389" height="370" loading="lazy">
+      <figcaption><strong>Dos definiciones de mes pico</strong>La gráfica contrasta un umbral histórico por ciudad con uno relativo a sus últimos 12 meses.</figcaption>
+    </figure>
+    <figure class="grafica grafica-amplia">
+      <img src="{{ url_for('static', filename='img/colab/figura-171-2.png') }}" alt="Frecuencia de picos por mes" width="669" height="317" loading="lazy">
+      <figcaption><strong>Frecuencia de picos por mes</strong>Las barras muestran en qué meses se superó más a menudo el umbral de pico.
+        <a href="{{ url_for('static', filename='img/colab/figura-171-2.png') }}">Ver imagen a tamaño original</a>
+      </figcaption>
+    </figure>
+    <figure class="grafica grafica-amplia">
+      <img src="{{ url_for('static', filename='img/colab/figura-174-1.png') }}" alt="Balance de clases" width="607" height="355" loading="lazy">
+      <figcaption><strong>Balance de clases</strong>Se cuentan meses normales y meses pico por separado para entrenamiento y prueba.
+        <a href="{{ url_for('static', filename='img/colab/figura-174-1.png') }}">Ver imagen a tamaño original</a>
+      </figcaption>
+    </figure>
+    <figure class="grafica grafica-amplia">
+      <img src="{{ url_for('static', filename='img/colab/figura-177-1.png') }}" alt="Técnicas de balanceo" width="1910" height="309" loading="lazy">
+      <figcaption><strong>Técnicas de balanceo</strong>Cada matriz cruza la clase real con la predicha para mostrar cuántos picos se detectaron.
+        <a href="{{ url_for('static', filename='img/colab/figura-177-1.png') }}">Ver imagen a tamaño original</a>
+      </figcaption>
+    </figure>
+    <figure class="grafica grafica-amplia">
+      <img src="{{ url_for('static', filename='img/colab/figura-188-1.png') }}" alt="Clasificadores de meses pico" width="1589" height="340" loading="lazy">
+      <figcaption><strong>Clasificadores de meses pico</strong>Las matrices de prueba comparan detecciones y falsas alarmas de los modelos finales del Colab.
+        <a href="{{ url_for('static', filename='img/colab/figura-188-1.png') }}">Ver imagen a tamaño original</a>
+      </figcaption>
+    </figure>
+  </div>
+</section>

@@ -1,11 +1,38 @@
 {% extends "base.html" %}
+{% macro figura(nombre, titulo, ancho, alto, descripcion) %}
+  {% set imagen = url_for('static', filename='img/colab/' ~ nombre) %}
+  <figure class="grafica grafica-amplia">
+    <img src="{{ imagen }}" alt="{{ titulo }}" width="{{ ancho }}" height="{{ alto }}" loading="lazy">
+    <figcaption>
+      <strong>{{ titulo }}</strong>{{ descripcion }}
+      <a href="{{ imagen }}">Ver imagen a tamaño original</a>
+    </figcaption>
+  </figure>
+{% endmacro %}
+
 {% block contenido %}
-<section class="card"><div class="controles"><label>Ciudad <select id="ciudad"></select></label>
-<a id="reporteLink" href="#">Reporte imprimible</a></div>
-<h2>Serie y mediana local</h2><canvas id="descomp" height="110"></canvas>
-<p class="nota" id="notaAnalisis"></p>
-<h2>Meses atípicos (Hampel local)</h2><div id="anomalias" class="scroll"></div></section>
-<section class="card"><h2>Correlación entre ciudades</h2>
-<p class="nota">Correlación de los cambios mensuales: cerca de 1 significa que suben y bajan juntas.</p>
-<div id="corr" class="scroll"></div></section>
+<section class="card">
+  <h2>Serie y mediana local</h2>
+  <div class="controles">
+    <label>Ciudad <select id="ciudad"></select></label>
+    <a id="reporteLink" href="#">Reporte imprimible</a>
+  </div>
+  <figure class="grafica">
+    <div class="analisis-serie">
+      <canvas id="descomp" role="img" aria-label="Toneladas mensuales observadas, mediana local y meses atípicos"></canvas>
+    </div>
+    <figcaption>La serie observada se compara con la mediana local. Los puntos resaltados marcan meses atípicos.</figcaption>
+  </figure>
+  <p class="nota" id="notaAnalisis"></p>
+</section>
+<div class="analisis-tablas">
+  <section class="card">
+    <h2>Meses atípicos (Hampel local)</h2>
+    <div id="anomalias" class="scroll marco-tabla"></div>
+  </section>
+  <section class="card evidencia" aria-label="Promedio mensual por ciudad">
+    {{ figura('figura-33-1.png', 'Promedio mensual por ciudad', 761, 393, 'Las barras comparan las toneladas mensuales observadas, incluida Cobija.') }}
+  </section>
+</div>
+{% include "colab/analisis.html" %}
 {% endblock %}

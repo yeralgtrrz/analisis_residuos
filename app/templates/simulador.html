@@ -1,8 +1,86 @@
 {% extends "base.html" %}
 {% block contenido %}
-<section class="card"><h2>¿Cuántas toneladas se ahorran?</h2>
-<p class="nota">Parte del último año disponible a nivel nacional. Mueve cada control para simular una reducción.</p>
-<div id="sliders" class="sliders"></div>
-<label>Capacidad de un camión (t) <input id="camion" type="number" value="10" min="1" style="width:5rem"></label>
-<div id="resultado" class="kpis"></div></section>
+<section class="card simulador-intro">
+  <h2>Simulador de reducción de residuos</h2>
+  <p>Explora cuántas toneladas dejarían de recolectarse al reducir cada tipo de residuo. Los porcentajes plantean escenarios hipotéticos.</p>
+  <p class="nota" id="baseSimulador" role="status">Cargando el último año completo…</p>
+  <h3>Cómo usarlo</h3>
+  <ol>
+    <li>Elige un porcentaje de reducción por tipo.</li>
+    <li>Ajusta cuánto puede transportar un camión por viaje.</li>
+    <li>Consulta las toneladas evitadas y los viajes equivalentes por año y por mes.</li>
+  </ol>
+</section>
+
+<div class="simulador-layout" id="escenarioSimulador" hidden>
+  <section class="card">
+    <h2>Configura el escenario</h2>
+    <div class="simulador-presets" id="presetsSimulador">
+      <button type="button" data-escenario="conservador">Conservador · 5 %</button>
+      <button type="button" data-escenario="domiciliarios">Solo domiciliarios · 20 %</button>
+      <button type="button" data-escenario="ambicioso">Ambicioso · 25 %</button>
+      <button type="button" data-escenario="restablecer">Restablecer</button>
+    </div>
+    <div id="sliders" class="simulador-sliders"></div>
+    <div class="simulador-campos">
+      <label for="camion">Capacidad del camión (t)
+        <input id="camion" type="number" min="0" step="any" value="10">
+      </label>
+      <p class="nota simulador-error" id="errorCamionSim" hidden>Introduce una capacidad mayor que 0 para calcular los viajes equivalentes.</p>
+      <label for="metaSim">Meta de reducción (%) <small>Opcional</small>
+        <input id="metaSim" type="number" min="0" max="100" step="any" placeholder="Ej. 10">
+      </label>
+      <p class="nota simulador-error" id="errorMetaSim" hidden>La meta debe estar entre 0 y 100 %.</p>
+      <label for="costoSim">Costo supuesto (Bs por tonelada) <small>Opcional</small>
+        <input id="costoSim" type="number" min="0" step="any" placeholder="Ej. 85">
+      </label>
+      <p class="nota simulador-error" id="errorCostoSim" hidden>Introduce un costo igual o mayor que 0.</p>
+    </div>
+  </section>
+
+  <section class="card simulador-resultados">
+    <h2>Resultados del escenario</h2>
+    <dl id="resultado" class="simulador-indicadores">
+      <div class="kpi"><dt>Toneladas evitadas al año</dt><dd id="ahorroSim"></dd></div>
+      <div class="kpi"><dt>Reducción del total</dt><dd id="porcentajeSim"></dd></div>
+      <div class="kpi"><dt>Viajes equivalentes al año</dt><dd id="viajesAnioSim"></dd></div>
+      <div class="kpi"><dt>Viajes equivalentes al mes</dt><dd id="viajesMesSim"></dd></div>
+    </dl>
+    <p id="resumenSim" class="simulador-resumen" role="status"></p>
+    <p id="resultadoMetaSim" class="nota" hidden></p>
+    <p id="resultadoCostoSim" class="nota" hidden></p>
+    <div class="simulador-acciones">
+      <button id="copiarEscenario" type="button">Copiar enlace</button>
+      <button id="exportarEscenario" type="button">Exportar CSV</button>
+    </div>
+    <p id="estadoEnlaceSim" class="nota" role="status"></p>
+    <input id="enlaceSim" type="url" aria-label="Enlace del escenario" readonly hidden>
+  </section>
+</div>
+
+<section class="card" id="volumenSimulador" hidden>
+  <h2>Volumen evitado y restante por tipo</h2>
+  <div class="simulador-leyenda">
+    <span><i aria-hidden="true"></i> Evitado</span>
+    <span><i aria-hidden="true"></i> Restante</span>
+  </div>
+  <div class="simulador-desglose" id="desgloseSim"></div>
+  <p class="nota">Cada barra representa el 100 % del volumen base de su tipo. Lee las toneladas para comparar volúmenes entre tipos.</p>
+</section>
+
+<div class="dos">
+  <section class="card prosa">
+    <h2>Cómo se calcula</h2>
+    <ul class="simulador-formulas">
+      <li><strong>Toneladas evitadas.</strong> Multiplica las toneladas base de cada tipo por su porcentaje de reducción y suma los resultados.</li>
+      <li><strong>Porcentaje del total.</strong> Divide las toneladas evitadas entre el total nacional por procedencia del año base y multiplica por 100.</li>
+      <li><strong>Viajes equivalentes.</strong> Divide las toneladas evitadas entre la capacidad del camión. Divide ese resultado entre 12 para obtener el promedio mensual.</li>
+    </ul>
+  </section>
+  <section class="card prosa">
+    <h2>Supuestos y límites</h2>
+    <p>El cálculo es lineal y mantiene fijas la población, la composición de referencia y la frecuencia de recolección. Cada viaje equivale a un camión cargado a la capacidad indicada.</p>
+    <p>Si ingresas un costo por tonelada, el ahorro económico estimado se calcula multiplicando ese costo supuesto por las toneladas evitadas.</p>
+  </section>
+</div>
 {% endblock %}

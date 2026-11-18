@@ -1,22 +1,10 @@
 {% extends "base.html" %}
 {% block contenido %}
 <section id="kpis" class="kpis"></section>
-<section class="card">
-  <div class="controles">
-    <label>Ciudad <select id="ciudad"></select></label>
-    <label>Desde <select id="desde"></select></label>
-    <label>Hasta <select id="hasta"></select></label>
-    <label>Vista <select id="agg"><option value="mensual">Mensual</option><option value="anual">Anual</option></select></label>
-  </div>
-  <canvas id="serie" height="110"></canvas>
-  <p class="nota" id="omitidos"></p>
-  <p class="nota" id="notaSerie"></p>
-  <p class="nota">2020 (COVID-19) cambió el patrón de recolección en varias ciudades.</p>
-  <p class="nota">Total nacional INE, incluye Cobija. El ranking, el mapa y la comparación entre ciudades excluyen Cobija, por eso su suma no iguala al Total: diferencia media 0,56 % y máxima 2,19 %.</p>
-</section>
+<p class="nota">Total nacional INE, incluye Cobija. Los gráficos por ciudad usan los registros disponibles.</p>
 <div class="dos">
-  <section class="card"><h2>Ranking de ciudades <select id="anioRank"></select></h2><canvas id="ranking"></canvas></section>
-  <section class="card"><h2>Residuos por procedencia</h2><canvas id="composicion"></canvas>
+  <section class="card"><h2>Ranking de ciudades <select id="anioRank"></select></h2><figure class="grafica"><canvas id="ranking"></canvas><figcaption>Las barras ordenan las ciudades por toneladas registradas en el año seleccionado.</figcaption></figure></section>
+  <section class="card"><h2>Residuos por procedencia</h2><figure class="grafica"><canvas id="composicion"></canvas><figcaption>Cada color representa un tipo de procedencia dentro del total anual.</figcaption></figure>
     <p class="nota">Se excluyen los años con menos de 12 meses de dato (2026).</p></section>
 </div>
 {% endblock %}

@@ -63,14 +63,14 @@ Los artefactos de `app/models/` se generan con `python tools/entrenar_modelos.py
 - **Duplicados**: se eliminan las filas repetidas al cargar. El dataset de tipos traía 72 claves `(fecha, tipo)` repetidas en 2021; sumarlas duplicaba ese año. La limpieza queda resumida en el LOG de Calidad.
 - **Nombres de tipos**: se unifican `Domiciliaria → Domiciliarios`, `Hospital → Establecimientos de salud` y `Otros(1) → Otros`.
 - **Años incompletos**: los agregados anuales excluyen años con menos de 12 meses de dato (2026 llega hasta junio). La vista mensual sí los muestra y la página Calidad lo explica.
-- **Cobija**: se excluye de las vistas por ciudad (ranking, mapa, comparar, correlación y composición por ciudad) porque tiene hasta 43 meses seguidos sin dato. El **Total** sigue siendo el dato oficial del INE y sí la incluye, por eso la suma de ciudades no iguala al Total: la diferencia media es 0,56 % y la máxima 2,19 %. En Calidad, la racha de Cobija se muestra como referencia marcada «excluida».
+- **Cobija**: se incluye en las vistas por ciudad y en los modelos. Sus meses sin registro se muestran como huecos. El Total nacional sigue siendo el dato oficial del INE.
 - **Serie B (ciudades)**: sin interpolación. Se recorta Sucre antes de 2015 y se eliminan las filas con `ton` nulo (menos del 5 % de la serie). Los huecos se ven como cortes y la cobertura mensual se reporta en Calidad.
-- **Ciudad × Tipo (A)**: mismo criterio que B (sin Cobija y Sucre desde 2015). Los tipos sin dato se marcan `no_reportado = True`, se rellenan con 0 y no se imputan. Así la suma de tipos reportados coincide con el total de B.
+- **Ciudad × Tipo (A)**: Sucre empieza en 2015. Se marca como `no_reportado` cada celda vacía. Si hay otros tipos registrados en el año, el tipo ausente se representa con 0. Los años sin registro conservan valores nulos.
 - **Atípicos**: Hampel local sobre el logaritmo de la serie, ventana de 13 meses y 4 MAD. Se reporta `out_local`, `ton_final`, `mediana_local` y `desvio_pct`; el dato atípico se winsoriza con los límites locales.
 - **Pronóstico**: entrenamiento anterior a `2023-01-01` y prueba desde esa fecha. Se comparan Holt-Winters, SARIMA, regresión lineal estacional y el modelo predictivo de 5 variables con MAE/MAPE, se elige el de menor MAE y la banda usa el error del backtesting. La interpolación se usa solo internamente para regularizar la serie mensual.
-- **Modelo predictivo**: regresión lineal con `lag1`, `lag12`, `mm3`, `mm12` y `t` sobre las 9 ciudades tratadas. Con corte 2023: MAE 875 t, RMSE 1 618 t y R² 0,987. Se reentrena con todos los datos y se guarda en `app/models/regresion_lineal.joblib`. Las predicciones son recursivas: cada valor proyectado alimenta el mes siguiente.
+- **Modelo predictivo**: regresión lineal con `lag1`, `lag12`, `mm3`, `mm12` y `t` sobre las 10 ciudades. Los resultados de prueba desde 2023 se muestran en Modelos. Se reentrena con todos los datos y se guarda en `app/models/regresion_lineal.joblib`. Cada predicción mensual alimenta la siguiente.
 - **Perfiles y alerta**: K-Means K=3 sobre perfiles ciudad-año (`lmedia`, `cv`, `crec`) escalados y entrenados hasta 2022. El clasificador de picos usa Random Forest con submuestreo de la clase mayoritaria y umbral P90 de la razón `y/mm12`; la alerta muestra la probabilidad del mes siguiente (alto ≥ 35 %, medio ≥ 15 %).
-- **Descargas**: por defecto entregan datos tratados (sin Cobija en las vistas por ciudad); `?crudo=1` entrega los datos completos con Cobija, deduplicados y con nombres normalizados.
+- **Descargas**: por defecto entregan los datos tratados de todas las ciudades. `?crudo=1` conserva los registros originales deduplicados y los nombres normalizados.
 
 ## Qué incluye
 
@@ -81,7 +81,7 @@ Los artefactos de `app/models/` se generan con `python tools/entrenar_modelos.py
 | Pronóstico | Backtesting con prueba desde 2023 de Holt-Winters, SARIMA, regresión lineal estacional y modelo predictivo; gráficos de real vs. cada modelo, barras MAE/MAPE, residuos y selector de modelo (automático o forzado); banda de confianza fuera de muestra |
 | Predicción | Predicción mensual por ciudad con el modelo de 5 variables, intervalo, error típico, tabla de meses y alerta de pico |
 | Modelos | Comparación de regresión lineal, Random Forest, Bagging, Boosting, Stacking y SVR; MAE/RMSE/R², importancia de variables y coeficientes |
-| Perfiles | Matriz ciudad × año con los 3 grupos de K-Means y detalle de tamaño, variabilidad y crecimiento |
+| Perfiles | Matriz ciudad × año, dispersión cartesiana de volumen y variabilidad, y detalle de los grupos de K-Means |
 | Mapa | Mapa de Bolivia con departamentos y burbujas por ciudad, con selector de año |
 | Por tipo | Evolución y composición por tipo de procedencia de cada ciudad, con `no_reportado = 0` |
 | Análisis | Serie tratada, mediana local, atípicos Hampel y correlación entre ciudades |

@@ -1,0 +1,26 @@
+<div class="card evidencia analisis-colab">
+    <section>
+      <h3>Series de tiempo</h3>
+      {{ figura('figura-130-1.png', 'Series con cobertura completa', 934, 358, 'El Colab compara las ocho ciudades que cumplían su criterio de cobertura.') }}
+    </section>
+    <section>
+      <h3>Volumen recolectado por ciudad</h3>
+      {{ figura('figura-31-1.png', 'Distribución de toneladas', 1389, 440, 'El histograma y los diagramas de caja usan escala logarítmica para comparar ciudades con volúmenes distintos.') }}
+    </section>
+    <section>
+      <h3>Correlación entre ciudades</h3>
+      <div id="corr" class="scroll marco-tabla"></div>
+      <p class="nota">La correlación usa los cambios mensuales. Un valor cercano a 1 indica que las ciudades tienden a subir y bajar juntas.</p>
+    </section>
+    <section>
+      <h3>Estacionalidad mensual</h3>
+      {{ figura('figura-35-1.png', 'Estacionalidad por ciudad', 921, 432, 'Cada celda muestra cuánto se aparta un mes del promedio anual de su ciudad, en porcentaje.') }}
+      {{ figura('figura-118-1.png', 'Efecto del mes', 844, 378, 'La gráfica resume cuánto varía la recolección mensual respecto al promedio anual de cada ciudad.') }}
+    </section>
+    <section>
+      <h3>Valores atípicos y cambios de nivel</h3>
+      {{ figura('figura-83-1.png', 'Valores extremos según el rango intercuartílico', 1483, 789, 'Los puntos rojos quedan fuera de los límites globales de 1,5 rangos intercuartílicos.') }}
+      {{ figura('figura-85-1.png', 'Cambios de nivel en Potosí', 1072, 374, 'El umbral global marca meses consecutivos cuando cambia el nivel de la serie.') }}
+      {{ figura('figura-90-1.png', 'Valores atípicos locales', 1589, 887, 'Los puntos rojos señalan observaciones alejadas del nivel de los meses vecinos.') }}
+    </section>
+</div>

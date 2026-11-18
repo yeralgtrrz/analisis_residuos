@@ -5,7 +5,7 @@ from functools import lru_cache
 import numpy as np
 import pandas as pd
 
-from config import COBIJA, CORTE
+from config import CORTE
 from .data_loader import cargar, log_carga, serie
 
 UMBRAL_COMPLETO = 12
@@ -22,17 +22,7 @@ def _matriz(df, dec=0):
     return [_lista(fila, dec) for fila in df.values]
 
 
-def _sin_cobija(d):
-    if COBIJA != "excluir" or d.empty:
-        return d
-    return d[d.categoria.str.lower() != "cobija"]
-
-
-def _es_cobija(categoria):
-    return COBIJA == "excluir" and str(categoria).lower() == "cobija"
-
-
-def _ventana(s, categoria):
+def ventana_serie(s, categoria):
     """Recorta Sucre antes de 2015 y el tramo inicial sin dato; conserva huecos."""
     s = s.sort_index()
     s = s[~s.index.duplicated(keep="first")]
@@ -50,9 +40,7 @@ def _ventana(s, categoria):
 
 def preparar_serie(s, categoria):
     """Serie mensual tratada: sin interpolación, con los nulos eliminados."""
-    if _es_cobija(categoria):
-        return pd.Series(dtype=float), None
-    s, recorte = _ventana(s, categoria)
+    s, recorte = ventana_serie(s, categoria)
     return s.dropna(), recorte
 
 
@@ -102,7 +90,7 @@ def anios_incompletos(dataset, categoria="Total"):
 def meta():
     d = cargar()
     completos = anios_completos("ciudades", "Total")
-    ciudades = _sin_cobija(d["ciudades"])
+    ciudades = d["ciudades"]
     return {"ciudades": [c for c in ciudades.categoria.unique() if c.lower() != "total"],
             "tipos": [c for c in d["tipos"].categoria.unique() if c.lower() != "total"],
             "anios": sorted(int(a) for a in d["ciudades"].fecha.dt.year.unique()),
@@ -115,7 +103,7 @@ def meta():
 # KPIs y agregados
 # --------------------------------------------------------------------------- #
 def kpis():
-    d = _sin_cobija(cargar()["ciudades"])
+    d = cargar()["ciudades"]
     t = d[d.categoria.str.lower() == "total"].dropna(subset=["ton"])
     por_anio = t.groupby(t.fecha.dt.year).ton.agg(["sum", "count"])
     completos = por_anio[por_anio["count"] == UMBRAL_COMPLETO]
@@ -130,7 +118,7 @@ def kpis():
 
 def ranking(anio):
     anio = int(anio)
-    d = _sin_cobija(cargar()["ciudades"])
+    d = cargar()["ciudades"]
     d = d[(d.categoria.str.lower() != "total") & (d.fecha.dt.year == anio)]
     r = d.groupby("categoria").ton.sum(min_count=1).sort_values(ascending=False)
     return {"labels": r.index.tolist(), "values": _lista(r),
@@ -152,12 +140,10 @@ def serie_anual(dataset, cats, desde, hasta, crudo=False):
     """Series anuales sin interpolar; se omiten años con menos de 12 meses con dato."""
     out = []
     for c in cats:
-        if _es_cobija(c) and not crudo:
-            continue
         s = serie(dataset, c)
         recorte = None
         if not crudo:
-            s, recorte = preparar_serie(s, c)
+            s, recorte = ventana_serie(s, c)
         s = s[(s.index.year >= desde) & (s.index.year <= hasta)]
         total, meses = _anual(s)
         ok = meses[meses >= UMBRAL_COMPLETO]
@@ -170,8 +156,6 @@ def serie_anual(dataset, cats, desde, hasta, crudo=False):
 
 
 def heatmap(dataset, cat, crudo=False):
-    if _es_cobija(cat) and not crudo:
-        return {"anios": [], "meses": list(range(1, 13)), "valores": []}
     s = serie(dataset, cat)
     if not crudo:
         s = preparar_serie(s, cat)[0]
@@ -185,21 +169,15 @@ def heatmap(dataset, cat, crudo=False):
 # --------------------------------------------------------------------------- #
 @lru_cache(maxsize=1)
 def ciudades_tratado():
-    """B tratado: sin Cobija, Sucre desde 2015 y sin filas nulas."""
+    """B tratado: Sucre desde 2015 y sin filas nulas."""
     d = cargar()["ciudades"].copy()
-    if COBIJA == "excluir":
-        d = d[d.categoria.str.lower() != "cobija"]
     d = d[~((d.categoria == "Sucre") & (d.fecha < pd.Timestamp(ANIO_CORTE_SUCRE, 1, 1)))]
     return d.dropna(subset=["ton"]).reset_index(drop=True)
 
 
 def cobertura_ciudad(ciudad="Sucre"):
     """Serie mensual tratada con sus huecos, sin interpolar."""
-    if _es_cobija(ciudad):
-        return {"x": [], "y": [], "n_huecos": 0, "racha_max": None,
-                "inicio_racha": None, "fin_racha": None, "recortado_desde": None,
-                "excluida": True}
-    s, recorte = _ventana(serie("ciudades", ciudad), ciudad)
+    s, recorte = ventana_serie(serie("ciudades", ciudad), ciudad)
     s = s.asfreq("MS")
     racha, ini, fin = _racha(s)
     return {"x": s.index.strftime("%Y-%m").tolist(), "y": _lista(s),
@@ -213,7 +191,7 @@ def faltantes():
     """Meses sin dato por ciudad/año y rachas tratadas y crudas."""
     raw = cargar()["ciudades"]
     raw = raw[raw.categoria.str.lower() != "total"].copy()
-    d = _sin_cobija(raw)
+    d = raw.copy()
     d["falta"] = d.ton.isna()
     p = d.pivot_table(index="categoria", columns=d.fecha.dt.year, values="falta", aggfunc="sum")
 
@@ -221,16 +199,10 @@ def faltantes():
     for ciudad in sorted(raw.categoria.unique()):
         s_raw = raw[raw.categoria == ciudad].set_index("fecha").ton
         crudo, crudo_ini, crudo_fin = _racha(s_raw)
-        if _es_cobija(ciudad):
-            tratada = trat_ini = trat_fin = None
-            anios = sorted(int(a) for a in s_raw.index[s_raw.isna()].year.unique())
-            excluida = True
-        else:
-            s_trat, _ = _ventana(s_raw, ciudad)
-            s_trat = s_trat.asfreq("MS")
-            tratada, trat_ini, trat_fin = _racha(s_trat)
-            anios = sorted(int(a) for a in s_trat.index[s_trat.isna()].year.unique())
-            excluida = False
+        s_trat, _ = ventana_serie(s_raw, ciudad)
+        s_trat = s_trat.asfreq("MS")
+        tratada, trat_ini, trat_fin = _racha(s_trat)
+        anios = sorted(int(a) for a in s_trat.index[s_trat.isna()].year.unique())
         rachas.append({
             "ciudad": ciudad, "tratada": tratada,
             "inicio_tratada": trat_ini.strftime("%Y-%m") if trat_ini is not None else None,
@@ -238,7 +210,7 @@ def faltantes():
             "cruda": crudo,
             "inicio_cruda": crudo_ini.strftime("%Y-%m") if crudo_ini is not None else None,
             "fin_cruda": crudo_fin.strftime("%Y-%m") if crudo_fin is not None else None,
-            "anios_afectados": anios, "excluida": excluida})
+            "anios_afectados": anios, "excluida": False})
 
     return {"ciudades": p.index.tolist(), "anios": [int(a) for a in p.columns],
             "valores": p.fillna(0).astype(int).values.tolist(), "rachas": rachas}
@@ -249,21 +221,16 @@ def ciudad_tipo_tratado():
     """A tratado como en el notebook: no reportado = 0, sin imputar."""
     d = cargar()["ciudad_tipo"].copy()
     d = d[d.tipo.str.lower() != "total"].copy()
-    if COBIJA == "excluir":
-        d = d[d.ciudad.str.lower() != "cobija"]
     d = d[~((d.ciudad == "Sucre") & (d.anio < ANIO_CORTE_SUCRE))].copy()
     d["no_reportado"] = d.ton.isna()
-    d["ton"] = d.ton.fillna(0)
+    tiene_dato = d.groupby(["ciudad", "anio"]).ton.transform("count").gt(0)
+    d.loc[tiene_dato, "ton"] = d.loc[tiene_dato, "ton"].fillna(0)
     d["estimado"] = False
-    d["faltante"] = False
+    d["faltante"] = d.ton.isna()
     return d.reset_index(drop=True)
 
 
 def ciudad_tipo(ciudad, crudo=False):
-    if _es_cobija(ciudad) and not crudo:
-        return {"anios": [], "series": {}, "estimado": {}, "faltante": {},
-                "no_reportado": {}, "anios_incompletos": [], "totales": [],
-                "imputado": False, "crudo": crudo, "tratado": not crudo}
     d = cargar()["ciudad_tipo"] if crudo else ciudad_tipo_tratado()
     d = d[(d.ciudad.str.lower() == ciudad.lower()) & (d.tipo.str.lower() != "total")]
     p = d.pivot_table(index="anio", columns="tipo", values="ton", dropna=False).sort_index()
@@ -280,8 +247,8 @@ def ciudad_tipo(ciudad, crudo=False):
         nr = nr.reindex(columns=p.columns).fillna(False).astype(bool)
         no_reportado = {c: nr[c].tolist() for c in p.columns}
         estimado = {c: [False] * len(p) for c in p.columns}
-        faltante = {c: [False] * len(p) for c in p.columns}
-        incompletos = []
+        faltante = {c: p[c].isna().tolist() for c in p.columns}
+        incompletos = [int(a) for a in p.index if p.loc[a].isna().all()]
 
     totales = []
     for a in p.index:
@@ -349,17 +316,16 @@ NOMBRES = ("Holt-Winters", "SARIMA", "Regresión lineal", "Modelo predictivo")
 
 @lru_cache(maxsize=128)
 def pronostico(dataset, cat, meses=12, modelo="auto"):
-    if _es_cobija(cat):
-        raise ValueError("Cobija se excluye del pronóstico.")
     raw = serie(dataset, cat)
     s = preparar_serie(raw, cat)[0]
-    s = s.asfreq("MS").interpolate(limit_direction="both")
+    s = s.asfreq("MS")
     meses = int(meses)
     if len(s) < 36:
         raise ValueError("La serie es demasiado corta para pronosticar.")
 
-    entreno, prueba = s[s.index < CORTE_FECHA], s[s.index >= CORTE_FECHA]
-    if len(entreno) < 36 or prueba.empty:
+    entreno = s[s.index < CORTE_FECHA].interpolate(limit_direction="both")
+    prueba = s[s.index >= CORTE_FECHA]
+    if len(entreno) < 36 or not prueba.notna().any():
         raise ValueError("No hay suficientes datos antes y después del corte 2023.")
     comparacion, predicciones, errores = [], {}, {}
     for nombre in NOMBRES:
@@ -379,7 +345,7 @@ def pronostico(dataset, cat, meses=12, modelo="auto"):
     automatico = min(comparacion, key=lambda m: m["mae"])["modelo"]
     pedido = modelo if modelo in predicciones else "auto"
     elegido = automatico if pedido == "auto" else pedido
-    pred = _ajustar(elegido, s, meses)
+    pred = _ajustar(elegido, s.interpolate(limit_direction="both"), meses)
     idx = pd.date_range(s.index[-1] + pd.offsets.MonthBegin(), periods=meses, freq="MS")
     sigma = float(np.nanstd(errores[elegido]))
     if not np.isfinite(sigma) or sigma == 0:
@@ -422,11 +388,10 @@ def detectar_local(s, ventana=13, k=4.0):
 
 def anomalias(dataset, cat):
     """Outliers locales (Hampel) y winsorización local sobre la serie tratada."""
-    if _es_cobija(cat):
-        return {"x": [], "y": [], "y_crudo": [], "ton_final": [], "mediana_local": [],
-                "out_local": [], "desvio_pct": [], "anomalias": []}
-    s, _ = preparar_serie(serie(dataset, cat), cat)
-    crudo = serie(dataset, cat).reindex(s.index)
+    crudo = serie(dataset, cat)
+    s, _ = ventana_serie(crudo, cat)
+    s = s.asfreq("MS")
+    crudo = crudo.reindex(s.index)
     out, final, mediana, desvio = detectar_local(s)
     anomalias = [{"mes": d.strftime("%Y-%m"),
                   "ton": round(float(s[d])),
@@ -457,7 +422,7 @@ def mapa(anio):
 
 
 def correlacion():
-    d = _sin_cobija(cargar()["ciudades"])
+    d = ciudades_tratado()
     p = d[d.categoria.str.lower() != "total"].pivot_table(index="fecha", columns="categoria", values="ton")
     c = p.diff().corr()
     return {"ciudades": c.columns.tolist(), "valores": _matriz(c, 2)}
@@ -531,13 +496,10 @@ def log_limpieza():
     cobija = b_ciudades[b_ciudades.categoria.str.lower() == "cobija"]
     sucre = b_ciudades[(b_ciudades.categoria == "Sucre") &
                        (b_ciudades.fecha < pd.Timestamp(ANIO_CORTE_SUCRE, 1, 1))]
-    b_filtrada = b_ciudades[b_ciudades.categoria.str.lower() != "cobija"]
-    b_filtrada = b_filtrada[~((b_filtrada.categoria == "Sucre") &
-                              (b_filtrada.fecha < pd.Timestamp(ANIO_CORTE_SUCRE, 1, 1)))]
+    b_filtrada = b_ciudades.drop(index=sucre.index)
     nulos_b = int(b_filtrada.ton.isna().sum())
 
-    a_filtrada = a_tipos[a_tipos.ciudad.str.lower() != "cobija"]
-    a_filtrada = a_filtrada[~((a_filtrada.ciudad == "Sucre") & (a_filtrada.anio < ANIO_CORTE_SUCRE))]
+    a_filtrada = a_tipos[~((a_tipos.ciudad == "Sucre") & (a_tipos.anio < ANIO_CORTE_SUCRE))]
     nulos_a = int(a_filtrada.ton.isna().sum())
 
     rows.extend([
@@ -547,20 +509,20 @@ def log_limpieza():
          "metodo": "Excluir de A tratada; el total se recalcula con los 5 tipos",
          "porque": "Son totales anuales, no un tipo de residuo: duplicarían el total."},
         {"paso": "L8", "dataset": "B", "problema": "Cobija: nulos en bloques de años completos",
-         "cantidad": int(len(cobija)), "metodo": "Excluir la ciudad de B, A y vistas por ciudad",
+         "cantidad": int(cobija.ton.isna().sum()), "metodo": "Conservar registros y dejar huecos en las gráficas",
          "porque": "Tiene hasta 43 meses seguidos sin dato; interpolar inventaría una serie."},
         {"paso": "L8", "dataset": "B", "problema": "Sucre: serie inexistente antes de 2015",
          "cantidad": int(len(sucre)), "metodo": "Recortar 2005-2014",
          "porque": "Los nulos son estructurales, no aleatorios."},
-        {"paso": "L8", "dataset": "B", "problema": "Nulos sueltos (menos de 5 %)",
+        {"paso": "L8", "dataset": "B", "problema": "Registros mensuales sin dato",
          "cantidad": nulos_b, "metodo": "Eliminar las filas",
-         "porque": "Pérdida despreciable y no se inventan datos."},
-        {"paso": "L9", "dataset": "A", "problema": "Cobija y Sucre anteriores a 2015",
+         "porque": "Los agregados usan las toneladas observadas."},
+        {"paso": "L9", "dataset": "A", "problema": "Sucre antes de 2015",
          "cantidad": int(len(a_tipos) - len(a_filtrada)),
          "metodo": "Mismo criterio que en B",
          "porque": "Cada ciudad debe tratarse igual en A y B."},
         {"paso": "L9", "dataset": "A", "problema": "Tipos sin dato",
-         "cantidad": nulos_a, "metodo": "Marcar no_reportado y poner 0",
+         "cantidad": nulos_a, "metodo": "Marcar no_reportado; usar 0 si el año tiene otros tipos reportados",
          "porque": "La suma de tipos reportados coincide con el total de B."},
         {"paso": "L11", "dataset": "B, C", "problema": "2026 solo tiene 6 meses (enero a junio)",
          "cantidad": int((b_ciudades.fecha.dt.year == 2026).sum()),
@@ -580,7 +542,6 @@ def datos_descarga(dataset, crudo=False):
         return ciudades_tratado().copy()
     if dataset == "ciudades_anual":
         d = cargar()["ciudades_anual"].copy()
-        d = d[d.categoria.str.lower() != "cobija"]
         d = d[~((d.categoria == "Sucre") & (d.anio < ANIO_CORTE_SUCRE))]
         return d.dropna(subset=["ton"]).reset_index(drop=True)
     if dataset == "ciudad_tipo":

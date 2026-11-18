@@ -3,23 +3,23 @@
     {
       "id": 2,
       "nombre": "En expansión",
-      "toneladas_medias": 3599.0,
-      "cv": 0.259,
-      "crecimiento": 0.44
-    },
-    {
-      "id": 1,
-      "nombre": "Volumen bajo estable",
-      "toneladas_medias": 4103.5,
-      "cv": 0.106,
-      "crecimiento": 0.039
+      "toneladas_medias": 787.7,
+      "cv": 0.074,
+      "crecimiento": 8.282
     },
     {
       "id": 0,
+      "nombre": "Volumen bajo estable",
+      "toneladas_medias": 3773.9,
+      "cv": 0.159,
+      "crecimiento": 0.052
+    },
+    {
+      "id": 1,
       "nombre": "Volumen alto estable",
-      "toneladas_medias": 21858.1,
-      "cv": 0.08,
-      "crecimiento": 0.04
+      "toneladas_medias": 14880.9,
+      "cv": 0.078,
+      "crecimiento": 0.055
     }
   ],
   "anios": [
@@ -44,6 +44,7 @@
     2025
   ],
   "ciudades": [
+    "Cobija",
     "Cochabamba",
     "El Alto",
     "La Paz",
@@ -55,6 +56,102 @@
     "Trinidad"
   ],
   "filas": [
+    {
+      "ciudad": "Cobija",
+      "anio": 2007,
+      "perfil": "Volumen bajo estable",
+      "toneladas": 78.2,
+      "cv": 0.082,
+      "crecimiento": 0.368
+    },
+    {
+      "ciudad": "Cobija",
+      "anio": 2008,
+      "perfil": "Volumen bajo estable",
+      "toneladas": 84.9,
+      "cv": 0.05,
+      "crecimiento": 0.086
+    },
+    {
+      "ciudad": "Cobija",
+      "anio": 2011,
+      "perfil": "En expansión",
+      "toneladas": 787.7,
+      "cv": 0.074,
+      "crecimiento": 8.282
+    },
+    {
+      "ciudad": "Cobija",
+      "anio": 2017,
+      "perfil": "Volumen alto estable",
+      "toneladas": 1375.9,
+      "cv": 0.028,
+      "crecimiento": 0.747
+    },
+    {
+      "ciudad": "Cobija",
+      "anio": 2018,
+      "perfil": "Volumen alto estable",
+      "toneladas": 1420.2,
+      "cv": 0.049,
+      "crecimiento": 0.032
+    },
+    {
+      "ciudad": "Cobija",
+      "anio": 2019,
+      "perfil": "Volumen alto estable",
+      "toneladas": 1529.9,
+      "cv": 0.049,
+      "crecimiento": 0.077
+    },
+    {
+      "ciudad": "Cobija",
+      "anio": 2020,
+      "perfil": "Volumen alto estable",
+      "toneladas": 1624.8,
+      "cv": 0.019,
+      "crecimiento": 0.062
+    },
+    {
+      "ciudad": "Cobija",
+      "anio": 2021,
+      "perfil": "Volumen bajo estable",
+      "toneladas": 1887.4,
+      "cv": 0.212,
+      "crecimiento": 0.162
+    },
+    {
+      "ciudad": "Cobija",
+      "anio": 2022,
+      "perfil": "Volumen bajo estable",
+      "toneladas": 1005.2,
+      "cv": 0.136,
+      "crecimiento": -0.467
+    },
+    {
+      "ciudad": "Cobija",
+      "anio": 2023,
+      "perfil": "Volumen bajo estable",
+      "toneladas": 878.8,
+      "cv": 0.091,
+      "crecimiento": -0.126
+    },
+    {
+      "ciudad": "Cobija",
+      "anio": 2024,
+      "perfil": "Volumen bajo estable",
+      "toneladas": 520.2,
+      "cv": 0.3,
+      "crecimiento": -0.408
+    },
+    {
+      "ciudad": "Cobija",
+      "anio": 2025,
+      "perfil": "Volumen bajo estable",
+      "toneladas": 489.1,
+      "cv": 0.21,
+      "crecimiento": -0.06
+    },
     {
       "ciudad": "Cochabamba",
       "anio": 2007,
@@ -162,7 +259,7 @@
     {
       "ciudad": "Cochabamba",
       "anio": 2020,
-      "perfil": "Volumen alto estable",
+      "perfil": "Volumen bajo estable",
       "toneladas": 16011.7,
       "cv": 0.152,
       "crecimiento": -0.035
@@ -530,7 +627,7 @@
     {
       "ciudad": "Oruro",
       "anio": 2009,
-      "perfil": "Volumen bajo estable",
+      "perfil": "Volumen alto estable",
       "toneladas": 3567.5,
       "cv": 0.081,
       "crecimiento": 0.108
@@ -538,7 +635,7 @@
     {
       "ciudad": "Oruro",
       "anio": 2010,
-      "perfil": "Volumen bajo estable",
+      "perfil": "Volumen alto estable",
       "toneladas": 3689.7,
       "cv": 0.074,
       "crecimiento": 0.034
@@ -546,7 +643,7 @@
     {
       "ciudad": "Oruro",
       "anio": 2011,
-      "perfil": "Volumen bajo estable",
+      "perfil": "Volumen alto estable",
       "toneladas": 3706.1,
       "cv": 0.095,
       "crecimiento": 0.004
@@ -586,7 +683,7 @@
     {
       "ciudad": "Oruro",
       "anio": 2016,
-      "perfil": "Volumen bajo estable",
+      "perfil": "Volumen alto estable",
       "toneladas": 4753.7,
       "cv": 0.111,
       "crecimiento": 0.062
@@ -594,7 +691,7 @@
     {
       "ciudad": "Oruro",
       "anio": 2017,
-      "perfil": "Volumen bajo estable",
+      "perfil": "Volumen alto estable",
       "toneladas": 5042.7,
       "cv": 0.078,
       "crecimiento": 0.061
@@ -602,7 +699,7 @@
     {
       "ciudad": "Oruro",
       "anio": 2018,
-      "perfil": "Volumen bajo estable",
+      "perfil": "Volumen alto estable",
       "toneladas": 5124.4,
       "cv": 0.092,
       "crecimiento": 0.016
@@ -610,7 +707,7 @@
     {
       "ciudad": "Oruro",
       "anio": 2019,
-      "perfil": "Volumen bajo estable",
+      "perfil": "Volumen alto estable",
       "toneladas": 5398.4,
       "cv": 0.11,
       "crecimiento": 0.053
@@ -634,7 +731,7 @@
     {
       "ciudad": "Oruro",
       "anio": 2022,
-      "perfil": "Volumen bajo estable",
+      "perfil": "Volumen alto estable",
       "toneladas": 6410.5,
       "cv": 0.11,
       "crecimiento": 0.058
@@ -642,7 +739,7 @@
     {
       "ciudad": "Oruro",
       "anio": 2023,
-      "perfil": "Volumen bajo estable",
+      "perfil": "Volumen alto estable",
       "toneladas": 6178.5,
       "cv": 0.079,
       "crecimiento": -0.036
@@ -650,7 +747,7 @@
     {
       "ciudad": "Oruro",
       "anio": 2024,
-      "perfil": "Volumen bajo estable",
+      "perfil": "Volumen alto estable",
       "toneladas": 6356.0,
       "cv": 0.111,
       "crecimiento": 0.029
@@ -666,7 +763,7 @@
     {
       "ciudad": "Potosí",
       "anio": 2007,
-      "perfil": "En expansión",
+      "perfil": "Volumen bajo estable",
       "toneladas": 2790.7,
       "cv": 0.268,
       "crecimiento": 0.629
@@ -674,7 +771,7 @@
     {
       "ciudad": "Potosí",
       "anio": 2008,
-      "perfil": "En expansión",
+      "perfil": "Volumen bajo estable",
       "toneladas": 3117.1,
       "cv": 0.321,
       "crecimiento": 0.117
@@ -690,7 +787,7 @@
     {
       "ciudad": "Potosí",
       "anio": 2010,
-      "perfil": "En expansión",
+      "perfil": "Volumen bajo estable",
       "toneladas": 4889.1,
       "cv": 0.187,
       "crecimiento": 0.573
@@ -698,7 +795,7 @@
     {
       "ciudad": "Potosí",
       "anio": 2011,
-      "perfil": "Volumen bajo estable",
+      "perfil": "Volumen alto estable",
       "toneladas": 4204.9,
       "cv": 0.103,
       "crecimiento": -0.14
@@ -722,7 +819,7 @@
     {
       "ciudad": "Potosí",
       "anio": 2014,
-      "perfil": "Volumen bajo estable",
+      "perfil": "Volumen alto estable",
       "toneladas": 5423.0,
       "cv": 0.089,
       "crecimiento": 0.304
@@ -746,7 +843,7 @@
     {
       "ciudad": "Potosí",
       "anio": 2017,
-      "perfil": "Volumen bajo estable",
+      "perfil": "Volumen alto estable",
       "toneladas": 3976.4,
       "cv": 0.068,
       "crecimiento": 0.008
@@ -754,7 +851,7 @@
     {
       "ciudad": "Potosí",
       "anio": 2018,
-      "perfil": "Volumen bajo estable",
+      "perfil": "Volumen alto estable",
       "toneladas": 3817.5,
       "cv": 0.096,
       "crecimiento": -0.04
@@ -770,7 +867,7 @@
     {
       "ciudad": "Potosí",
       "anio": 2020,
-      "perfil": "Volumen bajo estable",
+      "perfil": "Volumen alto estable",
       "toneladas": 3775.0,
       "cv": 0.076,
       "crecimiento": 0.042
@@ -778,7 +875,7 @@
     {
       "ciudad": "Potosí",
       "anio": 2021,
-      "perfil": "Volumen bajo estable",
+      "perfil": "Volumen alto estable",
       "toneladas": 3677.5,
       "cv": 0.038,
       "crecimiento": -0.026
@@ -786,7 +883,7 @@
     {
       "ciudad": "Potosí",
       "anio": 2022,
-      "perfil": "Volumen bajo estable",
+      "perfil": "Volumen alto estable",
       "toneladas": 3824.2,
       "cv": 0.049,
       "crecimiento": 0.04
@@ -794,7 +891,7 @@
     {
       "ciudad": "Potosí",
       "anio": 2023,
-      "perfil": "Volumen bajo estable",
+      "perfil": "Volumen alto estable",
       "toneladas": 3927.5,
       "cv": 0.038,
       "crecimiento": 0.027
@@ -802,7 +899,7 @@
     {
       "ciudad": "Potosí",
       "anio": 2024,
-      "perfil": "Volumen bajo estable",
+      "perfil": "Volumen alto estable",
       "toneladas": 4205.8,
       "cv": 0.047,
       "crecimiento": 0.071
@@ -810,7 +907,7 @@
     {
       "ciudad": "Potosí",
       "anio": 2025,
-      "perfil": "Volumen bajo estable",
+      "perfil": "Volumen alto estable",
       "toneladas": 4190.0,
       "cv": 0.036,
       "crecimiento": -0.004
@@ -970,7 +1067,7 @@
     {
       "ciudad": "Sucre",
       "anio": 2017,
-      "perfil": "Volumen bajo estable",
+      "perfil": "Volumen alto estable",
       "toneladas": 4766.6,
       "cv": 0.057,
       "crecimiento": -0.062
@@ -986,7 +1083,7 @@
     {
       "ciudad": "Sucre",
       "anio": 2021,
-      "perfil": "Volumen bajo estable",
+      "perfil": "Volumen alto estable",
       "toneladas": 5002.9,
       "cv": 0.088,
       "crecimiento": -0.01
@@ -994,7 +1091,7 @@
     {
       "ciudad": "Sucre",
       "anio": 2022,
-      "perfil": "Volumen bajo estable",
+      "perfil": "Volumen alto estable",
       "toneladas": 5386.6,
       "cv": 0.11,
       "crecimiento": 0.077
@@ -1002,7 +1099,7 @@
     {
       "ciudad": "Sucre",
       "anio": 2023,
-      "perfil": "Volumen bajo estable",
+      "perfil": "Volumen alto estable",
       "toneladas": 6242.1,
       "cv": 0.104,
       "crecimiento": 0.159
@@ -1026,7 +1123,7 @@
     {
       "ciudad": "Tarija",
       "anio": 2007,
-      "perfil": "Volumen bajo estable",
+      "perfil": "Volumen alto estable",
       "toneladas": 2511.9,
       "cv": 0.072,
       "crecimiento": 0.044
@@ -1034,7 +1131,7 @@
     {
       "ciudad": "Tarija",
       "anio": 2008,
-      "perfil": "Volumen bajo estable",
+      "perfil": "Volumen alto estable",
       "toneladas": 3052.5,
       "cv": 0.064,
       "crecimiento": 0.215
@@ -1042,7 +1139,7 @@
     {
       "ciudad": "Tarija",
       "anio": 2009,
-      "perfil": "Volumen bajo estable",
+      "perfil": "Volumen alto estable",
       "toneladas": 3372.0,
       "cv": 0.064,
       "crecimiento": 0.105
@@ -1066,7 +1163,7 @@
     {
       "ciudad": "Tarija",
       "anio": 2012,
-      "perfil": "Volumen bajo estable",
+      "perfil": "Volumen alto estable",
       "toneladas": 4482.8,
       "cv": 0.075,
       "crecimiento": 0.039
@@ -1074,7 +1171,7 @@
     {
       "ciudad": "Tarija",
       "anio": 2013,
-      "perfil": "Volumen bajo estable",
+      "perfil": "Volumen alto estable",
       "toneladas": 4139.0,
       "cv": 0.109,
       "crecimiento": -0.077
@@ -1082,7 +1179,7 @@
     {
       "ciudad": "Tarija",
       "anio": 2014,
-      "perfil": "Volumen bajo estable",
+      "perfil": "Volumen alto estable",
       "toneladas": 3916.7,
       "cv": 0.089,
       "crecimiento": -0.054
@@ -1090,7 +1187,7 @@
     {
       "ciudad": "Tarija",
       "anio": 2015,
-      "perfil": "Volumen bajo estable",
+      "perfil": "Volumen alto estable",
       "toneladas": 4454.9,
       "cv": 0.078,
       "crecimiento": 0.137
@@ -1098,7 +1195,7 @@
     {
       "ciudad": "Tarija",
       "anio": 2016,
-      "perfil": "Volumen bajo estable",
+      "perfil": "Volumen alto estable",
       "toneladas": 4720.6,
       "cv": 0.07,
       "crecimiento": 0.06
@@ -1106,7 +1203,7 @@
     {
       "ciudad": "Tarija",
       "anio": 2017,
-      "perfil": "Volumen bajo estable",
+      "perfil": "Volumen alto estable",
       "toneladas": 4921.6,
       "cv": 0.075,
       "crecimiento": 0.043
@@ -1114,7 +1211,7 @@
     {
       "ciudad": "Tarija",
       "anio": 2018,
-      "perfil": "Volumen bajo estable",
+      "perfil": "Volumen alto estable",
       "toneladas": 5240.1,
       "cv": 0.081,
       "crecimiento": 0.065
@@ -1122,7 +1219,7 @@
     {
       "ciudad": "Tarija",
       "anio": 2019,
-      "perfil": "Volumen bajo estable",
+      "perfil": "Volumen alto estable",
       "toneladas": 5359.8,
       "cv": 0.071,
       "crecimiento": 0.023
@@ -1130,7 +1227,7 @@
     {
       "ciudad": "Tarija",
       "anio": 2020,
-      "perfil": "Volumen bajo estable",
+      "perfil": "Volumen alto estable",
       "toneladas": 5676.8,
       "cv": 0.117,
       "crecimiento": 0.059
@@ -1138,7 +1235,7 @@
     {
       "ciudad": "Tarija",
       "anio": 2021,
-      "perfil": "Volumen bajo estable",
+      "perfil": "Volumen alto estable",
       "toneladas": 6296.2,
       "cv": 0.07,
       "crecimiento": 0.109
@@ -1146,7 +1243,7 @@
     {
       "ciudad": "Tarija",
       "anio": 2022,
-      "perfil": "Volumen bajo estable",
+      "perfil": "Volumen alto estable",
       "toneladas": 6267.5,
       "cv": 0.064,
       "crecimiento": -0.005
@@ -1154,7 +1251,7 @@
     {
       "ciudad": "Tarija",
       "anio": 2023,
-      "perfil": "Volumen bajo estable",
+      "perfil": "Volumen alto estable",
       "toneladas": 5895.5,
       "cv": 0.081,
       "crecimiento": -0.059
@@ -1162,7 +1259,7 @@
     {
       "ciudad": "Tarija",
       "anio": 2024,
-      "perfil": "Volumen bajo estable",
+      "perfil": "Volumen alto estable",
       "toneladas": 5736.8,
       "cv": 0.077,
       "crecimiento": -0.027
@@ -1170,7 +1267,7 @@
     {
       "ciudad": "Tarija",
       "anio": 2025,
-      "perfil": "Volumen bajo estable",
+      "perfil": "Volumen alto estable",
       "toneladas": 6078.3,
       "cv": 0.067,
       "crecimiento": 0.06
@@ -1186,7 +1283,7 @@
     {
       "ciudad": "Trinidad",
       "anio": 2010,
-      "perfil": "Volumen bajo estable",
+      "perfil": "Volumen alto estable",
       "toneladas": 2022.0,
       "cv": 0.037,
       "crecimiento": 0.166
@@ -1218,7 +1315,7 @@
     {
       "ciudad": "Trinidad",
       "anio": 2014,
-      "perfil": "Volumen bajo estable",
+      "perfil": "Volumen alto estable",
       "toneladas": 2026.9,
       "cv": 0.046,
       "crecimiento": 0.001
@@ -1226,7 +1323,7 @@
     {
       "ciudad": "Trinidad",
       "anio": 2019,
-      "perfil": "Volumen bajo estable",
+      "perfil": "Volumen alto estable",
       "toneladas": 2553.5,
       "cv": 0.095,
       "crecimiento": 0.26
@@ -1234,7 +1331,7 @@
     {
       "ciudad": "Trinidad",
       "anio": 2020,
-      "perfil": "Volumen bajo estable",
+      "perfil": "Volumen alto estable",
       "toneladas": 3081.5,
       "cv": 0.037,
       "crecimiento": 0.207
@@ -1250,7 +1347,7 @@
     {
       "ciudad": "Trinidad",
       "anio": 2022,
-      "perfil": "Volumen bajo estable",
+      "perfil": "Volumen alto estable",
       "toneladas": 3111.9,
       "cv": 0.087,
       "crecimiento": 0.181
@@ -1258,7 +1355,7 @@
     {
       "ciudad": "Trinidad",
       "anio": 2023,
-      "perfil": "Volumen bajo estable",
+      "perfil": "Volumen alto estable",
       "toneladas": 2958.4,
       "cv": 0.071,
       "crecimiento": -0.049
@@ -1266,7 +1363,7 @@
     {
       "ciudad": "Trinidad",
       "anio": 2024,
-      "perfil": "Volumen bajo estable",
+      "perfil": "Volumen alto estable",
       "toneladas": 2775.7,
       "cv": 0.065,
       "crecimiento": -0.062
@@ -1274,7 +1371,7 @@
     {
       "ciudad": "Trinidad",
       "anio": 2025,
-      "perfil": "Volumen bajo estable",
+      "perfil": "Volumen alto estable",
       "toneladas": 2971.4,
       "cv": 0.082,
       "crecimiento": 0.071

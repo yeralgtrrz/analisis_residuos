@@ -7,11 +7,36 @@
 </section>
 <section class="card">
   <h2>Mapa de perfiles por año</h2>
-  <div id="matrizPerfiles" class="scroll"></div>
+  <div id="matrizPerfiles" class="scroll marco-tabla"></div>
   <p class="nota">El color indica el grupo; pasa el cursor por una celda para ver toneladas, variabilidad y crecimiento. Solo se incluyen años con 12 meses de dato.</p>
 </section>
 <section class="card">
-  <h2>Detalle ciudad-año</h2>
-  <div id="tablaPerfiles" class="scroll"></div>
+  <h2>Volumen y variabilidad por ciudad</h2>
+  <figure class="grafica">
+    <canvas id="planoPerfiles" height="105" role="img" aria-label="Dispersión de toneladas medias y variabilidad por ciudad y año"></canvas>
+    <figcaption>Cada punto representa un año con datos de una ciudad. El eje X muestra su promedio mensual en toneladas y el eje Y, su variabilidad relativa. El color indica el perfil K-Means y los puntos con borde corresponden a Cobija.</figcaption>
+  </figure>
 </section>
+<section class="card perfil-detalle" aria-labelledby="tituloDetallePerfil">
+  <h2 id="tituloDetallePerfil">Detalle ciudad-año</h2>
+  <p class="nota">Selecciona una ciudad y un año para consultar su grupo y las cifras de recolección. El selector muestra los años para los que se pudo calcular un perfil.</p>
+  <div class="controles perfil-filtros">
+    <label for="ciudadPerfil">Ciudad <select id="ciudadPerfil" disabled></select></label>
+    <label for="anioPerfil">Año <select id="anioPerfil" disabled></select></label>
+  </div>
+  <div class="perfil-ficha" id="fichaPerfil" aria-live="polite" aria-atomic="true" hidden>
+    <div class="perfil-ficha-titulo">
+      <h3 id="periodoPerfil"></h3>
+      <span id="grupoDetallePerfil"></span>
+    </div>
+    <p id="descripcionPerfil"></p>
+    <dl class="kpis perfil-indicadores">
+      <div class="kpi"><dt>Promedio mensual</dt><dd id="mediaPerfil"></dd><dd class="nota">Media de las toneladas recolectadas en los 12 meses del año.</dd></div>
+      <div class="kpi"><dt>Variabilidad mensual</dt><dd id="variabilidadPerfil"></dd><dd class="nota">Desviación estándar dividida entre la media. Un porcentaje mayor indica más variación entre meses.</dd></div>
+      <div class="kpi"><dt>Cambio del promedio</dt><dd id="crecimientoPerfil"></dd><dd class="nota">Variación respecto al promedio del año anterior disponible para el cálculo.</dd></div>
+    </dl>
+  </div>
+  <p id="estadoDetallePerfil" class="nota" role="status">Cargando perfiles…</p>
+</section>
+{% include "colab/perfiles.html" %}
 {% endblock %}

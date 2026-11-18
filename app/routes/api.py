@@ -29,12 +29,10 @@ def get_serie():
         return jsonify(an.serie_anual(ds, cats, desde, hasta, crudo))
     out = []
     for c in cats:
-        if an._es_cobija(c) and not crudo:
-            continue
         s = serie(ds, c)
         recorte = None
         if not crudo:
-            s, recorte = an.preparar_serie(s, c)
+            s, recorte = an.ventana_serie(s, c)
         elif s.notna().any():
             s = s.loc[s.first_valid_index():]
         s = s[(s.index.year >= desde) & (s.index.year <= hasta)]
@@ -61,9 +59,12 @@ def heatmap():
 
 @api.get("/pronostico")
 def pronostico():
-    return jsonify(an.pronostico(request.args.get("dataset", "ciudades"),
-                                 request.args.get("cat", "Total"), int(request.args.get("meses", 12)),
-                                 request.args.get("modelo", "auto")))
+    try:
+        return jsonify(an.pronostico(request.args.get("dataset", "ciudades"),
+                                     request.args.get("cat", "Total"), int(request.args.get("meses", 12)),
+                                     request.args.get("modelo", "auto")))
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
 
 
 @api.get("/faltantes")

@@ -1,8 +1,9 @@
 {% extends "base.html" %}
 {% block contenido %}
 <section class="card"><div class="controles"><label>Ciudad <select id="ciudad"></select></label>
-<span class="nota">Datos anuales 2010-2025. Tratado: sin imputación; los tipos sin dato se marcan como no reportados y valen 0; Sucre empieza en 2015.</span></div>
-<div class="dos"><div><h2>Evolución por tipo</h2><canvas id="evolucion"></canvas></div>
-<div><h2>Composición del último año</h2><canvas id="torta"></canvas></div></div>
+<span class="nota">Datos anuales 2010-2025. Tratado: sin imputación; los tipos sin dato valen 0 si hay otros tipos reportados ese año. Los años sin registros quedan vacíos. Sucre empieza en 2015.</span></div>
+<div class="dos"><div><h2>Evolución por tipo</h2><figure class="grafica"><canvas id="evolucion"></canvas><figcaption>Las líneas muestran cómo cambian las toneladas por procedencia. Los años sin registro quedan vacíos.</figcaption></figure></div>
+<div><h2>Composición del último año</h2><figure class="grafica"><div class="tipos-dona"><canvas id="torta"></canvas></div><figcaption>Cada sector representa la proporción del tipo en el último año con datos.</figcaption></figure></div></div>
 <p class="nota" id="notaTipos"></p></section>
+{% include "colab/tipos.html" %}
 {% endblock %}

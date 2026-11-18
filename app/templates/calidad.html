@@ -1,30 +1,26 @@
 {% extends "base.html" %}
 {% block contenido %}
-<section class="card">
-  <h2>Meses sin dato por ciudad y año</h2>
-  <p class="nota">Cada celda cuenta los meses con «n.d.» o vacíos en los datos originales. Sucre solo tiene registro desde 2015; 2026 llega hasta junio en todos los casos. Cobija se excluye de estas vistas.</p>
-  <div id="faltantes" class="scroll"></div>
-</section>
+{% include "colab/calidad.html" %}
 <section class="card">
   <h2>Rachas de meses sin dato</h2>
-  <p class="nota">La racha tratada aplica el recorte de Sucre desde 2015 y excluye Cobija. La racha cruda muestra el período completo del INE; Cobija se incluye solo como referencia.</p>
-  <div id="rachas" class="scroll"></div>
+  <p class="nota">La racha tratada mide el bloque continuo más largo sin datos después del recorte de Sucre. La racha cruda abarca el período original del INE.</p>
+  <div id="rachas" class="scroll marco-tabla"></div>
 </section>
 <section class="card">
   <h2>Huecos de la serie mensual</h2>
   <p class="nota">La serie tratada no se interpola: los huecos se mantienen. El pronóstico interpola solo internamente para regularizar la serie mensual.</p>
   <div class="controles"><label>Ciudad <select id="ciudadImp"></select></label>
     <span id="detalleImp" class="nota"></span></div>
-  <canvas id="cobertura" height="100"></canvas>
+  <figure class="grafica"><canvas id="cobertura" height="100"></canvas><figcaption>Los cortes de la línea señalan meses sin registro para la ciudad elegida.</figcaption></figure>
 </section>
 <section class="card">
   <h2>Consistencia entre datasets</h2>
   <p class="nota">B = ciudades, C = tipos, A = ciudad × tipo. B vs C usa B completo (incluye Cobija); la línea aparte explica el peso de Cobija. B vs A compara pares ciudad-año después del mismo tratamiento.</p>
-  <div id="consistencia" class="scroll"></div>
+  <div id="consistencia" class="scroll marco-tabla"></div>
 </section>
 <section class="card">
   <h2>LOG de limpieza</h2>
   <p class="nota">Resumen de duplicados, exclusiones, recortes y celdas no reportadas. <a href="/api/limpieza.csv">Descargar CSV</a>.</p>
-  <div id="logLimpieza" class="scroll"></div>
+  <div id="logLimpieza" class="scroll marco-tabla"></div>
 </section>
 {% endblock %}

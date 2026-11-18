@@ -1,35 +1,101 @@
 {% extends "base.html" %}
 {% block contenido %}
-<section class="card">
+<section class="card modelos-resumen">
   <h2>Modelo desplegado</h2>
+  <p class="modelos-nombre" id="nombreModelo"></p>
   <div id="kpisModelo" class="kpis"></div>
   <p class="nota" id="notaModelo"></p>
 </section>
 <div class="dos">
   <section class="card">
-    <h2>Comparación de modelos</h2>
-    <div id="tablaModelos" class="scroll"></div>
-    <p class="nota">Métricas de prueba desde 2023, calculadas antes de reentrenar con todos los datos. Menor MAE es mejor.</p>
+    <h2>MAE de prueba (t)</h2>
+    <figure class="grafica">
+      <canvas id="maeModelos" height="130" role="img" aria-label="Error absoluto medio de los modelos en toneladas"></canvas>
+      <figcaption>Las barras más cortas indican menor error. La barra dorada identifica el modelo desplegado.</figcaption>
+    </figure>
   </section>
   <section class="card">
-    <h2>MAE de prueba (t)</h2>
-    <canvas id="maeModelos" height="100"></canvas>
+    <h2>Comparación de modelos</h2>
+    <div id="tablaModelos" class="scroll marco-tabla"></div>
+    <p class="nota">Métricas calculadas con los meses de prueba desde enero de 2023.</p>
   </section>
 </div>
 <div class="dos">
   <section class="card">
-    <h2>Importancia de variables</h2>
-    <canvas id="importancia" height="100"></canvas>
-    <p class="nota">Importancia del Random Forest sobre la razón <code>toneladas / mm12</code>.</p>
+    <h2>Variables mensuales</h2>
+  <div class="scroll marco-tabla">
+    <table class="tabla-datos">
+      <thead><tr><th scope="col">Variable</th><th scope="col">Cómo se obtiene</th></tr></thead>
+      <tbody>
+        <tr><th scope="row"><code>lag1</code></th><td>Toneladas recolectadas el mes anterior.</td></tr>
+        <tr><th scope="row"><code>lag12</code></th><td>Toneladas recolectadas el mismo mes del año anterior.</td></tr>
+        <tr><th scope="row"><code>mm3</code></th><td>Promedio de toneladas de los 3 meses anteriores.</td></tr>
+        <tr><th scope="row"><code>mm12</code></th><td>Promedio de toneladas de los 12 meses anteriores.</td></tr>
+        <tr><th scope="row"><code>t</code></th><td>Número de meses desde el inicio de la serie utilizada, empezando en cero.</td></tr>
+        <tr><th scope="row"><code>mes_sin</code> y <code>mes_cos</code></th><td>Seno y coseno de 2π por el número del mes dividido entre 12.</td></tr>
+      </tbody>
+    </table>
+  </div>
   </section>
   <section class="card">
-    <h2>Coeficientes de la regresión lineal</h2>
-    <div id="coeficientes" class="scroll"></div>
-    <p class="nota">El coeficiente indica el cambio esperado en toneladas cuando la variable sube una unidad, manteniendo las demás constantes.</p>
+    <h2>Importancia de variables en Random Forest</h2>
+    <figure class="grafica">
+      <canvas id="importancia" height="130" role="img" aria-label="Importancia de las cinco variables en Random Forest"></canvas>
+      <figcaption>Cada barra muestra el peso de la variable en el ajuste de la razón <code>toneladas / mm12</code>.</figcaption>
+    </figure>
   </section>
 </div>
-<section class="card">
-  <h2>Ficha del modelo</h2>
-  <div id="fichaModelo" class="scroll"></div>
+<section class="modelos-variables" aria-labelledby="variablesAplicacion">
+  <h2 id="variablesAplicacion">Variables por modelo de la aplicación</h2>
+  <div class="modelos-tarjetas">
+    <article class="card">
+      <h3>Regresión lineal y modelo predictivo</h3>
+      <p><code>lag1</code>, <code>lag12</code>, <code>mm3</code>, <code>mm12</code> y <code>t</code>. El objetivo son las toneladas recolectadas en el mes.</p>
+    </article>
+    <article class="card">
+      <h3>Random Forest, Bagging, Boosting, Stacking y SVR</h3>
+      <p>Usan las mismas cinco variables. El objetivo es la razón entre las toneladas del mes y <code>mm12</code>. La predicción se multiplica por <code>mm12</code> para expresarla en toneladas.</p>
+    </article>
+    <article class="card">
+      <h3>Holt-Winters y SARIMA</h3>
+      <p>Usan el historial mensual de toneladas de la serie seleccionada, con un ciclo estacional de 12 meses.</p>
+    </article>
+    <article class="card">
+      <h3>Regresión lineal estacional</h3>
+      <p>Usa una constante, <code>t</code> y los senos y cosenos de los ciclos de 12 y 6 meses. El objetivo son las toneladas del mes.</p>
+    </article>
+    <article class="card">
+      <h3>K-Means de perfiles</h3>
+      <p>Usa <code>lmedia</code>, el logaritmo del promedio mensual del año, <code>cv</code>, la desviación estándar dividida entre el promedio, y <code>crec</code>, la variación del promedio frente al año disponible inmediatamente anterior.</p>
+    </article>
+    <article class="card">
+      <h3>Random Forest de meses pico</h3>
+      <p>Usa las cinco variables de la regresión, más <code>mes_sin</code> y <code>mes_cos</code>. Un mes es pico si la razón entre sus toneladas y <code>mm12</code> supera el percentil 90 del entrenamiento.</p>
+    </article>
+  </div>
 </section>
+<div class="dos">
+  <section class="card">
+    <h2>Coeficientes de la regresión lineal</h2>
+    <div id="coeficientes" class="scroll marco-tabla"></div>
+    <p class="nota">Cada coeficiente indica cuánto cambia la predicción en toneladas cuando su variable sube una unidad y las demás se mantienen constantes.</p>
+  </section>
+  <section class="card">
+    <h2>Ficha del modelo</h2>
+    <div id="fichaModelo" class="scroll marco-tabla"></div>
+  </section>
+</div>
+<section class="card modelos-colab">
+  <h2>Variables del Colab</h2>
+  <p>El RANSAC y los demás modelos de la comparación de regresión por ciudad, así como los clasificadores de meses pico, usan el conjunto <code>X_all</code> del notebook:</p>
+  <ul>
+    <li><code>lag1</code>, <code>lag12</code>, <code>mm3</code>, <code>mm12</code> y <code>t</code>, definidos en la tabla anterior.</li>
+    <li><code>crec12</code>, cambio relativo entre las toneladas del mes anterior y las del mismo mes un año antes.</li>
+    <li><code>es_dic</code> y <code>es_ene</code>, indicadores de diciembre y enero.</li>
+    <li>Indicadores de mes, ciudad y perfil K-Means de la ciudad en el año anterior, codificados como columnas de 0 y 1.</li>
+    <li>Proporciones nacionales de mercados, establecimientos de salud, áreas públicas y otros residuos en el total del mes anterior.</li>
+  </ul>
+  <p>Los modelos de regresión nacional del Colab usan las siete variables de la tabla, calculadas sobre la serie mensual del agregado nacional. La referencia <code>mm12</code> de las comparaciones toma directamente el promedio de los doce meses anteriores.</p>
+</section>
+{% include "colab/modelos.html" %}
 {% endblock %}

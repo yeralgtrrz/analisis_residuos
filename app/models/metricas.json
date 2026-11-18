@@ -12,105 +12,105 @@
   "entrenamiento": {
     "desde": "2006-01",
     "hasta": "2026-06",
-    "filas": 2032
+    "filas": 2199
   },
   "prueba": {
     "desde": "2023-01",
-    "filas": 378
+    "filas": 420
   },
   "metricas": {
-    "mae": 875.4567,
-    "rmse": 1617.6834,
-    "r2": 0.9865
+    "mae": 798.1993,
+    "rmse": 1535.2087,
+    "r2": 0.9878
   },
   "coeficientes": [
     {
       "variable": "lag1",
-      "coeficiente": 0.27864
+      "coeficiente": 0.279171
     },
     {
       "variable": "lag12",
-      "coeficiente": 0.243849
+      "coeficiente": 0.243289
     },
     {
       "variable": "mm3",
-      "coeficiente": 0.414418
+      "coeficiente": 0.414639
     },
     {
       "variable": "mm12",
-      "coeficiente": 0.068802
+      "coeficiente": 0.068879
     },
     {
       "variable": "t",
-      "coeficiente": -1.489745
+      "coeficiente": -1.416026
     }
   ],
-  "intercepto": 255.935946,
-  "actualizado": "2026-11-17T06:02:25+00:00",
+  "intercepto": 237.838683,
+  "actualizado": "2026-11-18T13:25:23+00:00",
   "modelos": [
     {
       "nombre": "Regresión lineal",
-      "mae": 875.5,
-      "rmse": 1617.7,
-      "r2": 0.9865,
+      "mae": 798.2,
+      "rmse": 1535.2,
+      "r2": 0.9878,
       "objetivo": "nivel"
     },
     {
       "nombre": "Random Forest",
-      "mae": 1537.9,
-      "rmse": 2565.5,
-      "r2": 0.9661,
+      "mae": 1466.7,
+      "rmse": 2506.3,
+      "r2": 0.9675,
       "objetivo": "razón y/mm12"
     },
     {
       "nombre": "Bagging",
-      "mae": 1440.7,
-      "rmse": 2465.0,
-      "r2": 0.9687,
+      "mae": 1370.8,
+      "rmse": 2392.0,
+      "r2": 0.9704,
       "objetivo": "razón y/mm12"
     },
     {
       "nombre": "Boosting",
-      "mae": 1141.9,
-      "rmse": 1945.2,
-      "r2": 0.9805,
+      "mae": 1237.3,
+      "rmse": 2293.2,
+      "r2": 0.9728,
       "objetivo": "razón y/mm12"
     },
     {
       "nombre": "Stacking",
-      "mae": 1126.2,
-      "rmse": 1920.5,
-      "r2": 0.981,
+      "mae": 1019.4,
+      "rmse": 1804.5,
+      "r2": 0.9831,
       "objetivo": "razón y/mm12"
     },
     {
       "nombre": "SVR",
-      "mae": 1458.6,
-      "rmse": 2878.7,
-      "r2": 0.9573,
+      "mae": 1342.0,
+      "rmse": 2837.0,
+      "r2": 0.9583,
       "objetivo": "razón y/mm12"
     }
   ],
   "importancia": [
     {
       "variable": "lag1",
-      "valor": 0.2377
+      "valor": 0.2233
     },
     {
       "variable": "lag12",
-      "valor": 0.2051
+      "valor": 0.2073
     },
     {
       "variable": "mm3",
-      "valor": 0.1204
+      "valor": 0.1224
     },
     {
       "variable": "mm12",
-      "valor": 0.2577
+      "valor": 0.2477
     },
     {
       "variable": "t",
-      "valor": 0.1791
+      "valor": 0.1993
     }
   ]
 }

@@ -26,21 +26,22 @@ def test_composicion_limpia():
     assert 1_550_000 < total_2025 < 1_650_000
 
 
-def test_b_sin_cobija_y_sin_nulos():
+def test_b_incluye_cobija_y_elimina_filas_sin_dato():
     d = an.ciudades_tratado()
-    assert "Cobija" not in set(d.categoria)
+    assert "Cobija" in set(d.categoria)
     assert d[d.categoria == "Sucre"].fecha.min().year == 2015
     assert not d.ton.isna().any()
-    assert len(d) == 2448
+    assert len(d) == 2651
 
 
 def test_ciudad_tipo_sin_imputacion():
     t = an.ciudad_tipo_tratado()
-    assert "Cobija" not in set(t.ciudad)
+    assert "Cobija" in set(t.ciudad)
     assert t[t.ciudad == "Sucre"].anio.min() == 2015
-    assert not t.ton.isna().any()
-    assert bool(t.estimado.any()) is False and bool(t.faltante.any()) is False
-    assert int(t.no_reportado.sum()) == 31
+    assert set(t.loc[t.ton.isna(), "ciudad"]) == {"Cobija"}
+    assert t.loc[t.ton.isna(), "anio"].unique().tolist() == [2013, 2014, 2015]
+    assert bool(t.estimado.any()) is False and t.faltante.equals(t.ton.isna())
+    assert int(t.no_reportado.sum()) == 46
     por = t.groupby("ciudad").no_reportado.sum()
     assert por.loc["Oruro"] == 3 and por.loc["Santa Cruz"] == 3
     assert por.loc["Sucre"] == 3 and por.loc["Trinidad"] == 6
@@ -64,18 +65,26 @@ def test_ciudad_tipo_api_tratado_y_crudo():
     assert oruro["totales"][0] is not None
 
 
-def test_cobija_fuera_de_vistas_por_ciudad():
-    assert "Cobija" not in an.meta()["ciudades"]
-    assert "Cobija" not in an.ranking(2025)["labels"]
-    assert "Cobija" not in {x["ciudad"] for x in an.mapa(2025)}
+def test_cobija_visible_con_huecos():
+    assert "Cobija" in an.meta()["ciudades"]
+    assert "Cobija" in an.ranking(2025)["labels"]
+    assert "Cobija" in {x["ciudad"] for x in an.mapa(2025)}
     c = create_app().test_client()
-    assert c.get("/api/serie?cats=Cobija&agg=mensual").get_json() == []
+    mensual, = c.get("/api/serie?cats=Cobija&agg=mensual").get_json()
+    assert mensual["y"][mensual["x"].index("2013-01")] is None
+    assert mensual["y"][mensual["x"].index("2025-01")] > 0
+    anual, = c.get("/api/serie?cats=Cobija&agg=anual").get_json()
+    assert "2012" not in anual["x"] and "2025" in anual["x"]
+    assert c.get("/api/anomalias?cat=Cobija").get_json()["y"].count(None) == 55
+    tipos = c.get("/api/ciudad-tipo?ciudad=Cobija").get_json()
+    assert tipos["anios_incompletos"] == [2013, 2014, 2015]
+    assert tipos["totales"][tipos["anios"].index(2013)] is None
 
     crudo = c.get("/api/serie?cats=Cobija&agg=mensual&crudo=1").get_json()
     assert len(crudo) == 1 and len(crudo[0]["x"]) == 258
     d = an.faltantes()
     cobija = next(x for x in d["rachas"] if x["ciudad"] == "Cobija")
-    assert cobija["excluida"] is True and cobija["cruda"] == 43 and cobija["tratada"] is None
+    assert cobija["excluida"] is False and cobija["cruda"] == cobija["tratada"] == 43
     assert cobija["anios_afectados"] == [2009, 2012, 2013, 2014, 2015]
     raw_tipo = c.get("/api/ciudad-tipo?ciudad=Cobija&crudo=1").get_json()
     assert raw_tipo["anios"][0] == 2010 and raw_tipo["crudo"] is True
@@ -155,7 +164,7 @@ def test_artefactos_del_modelo():
     assert len(m["modelos"]) == 6
     assert {x["nombre"] for x in m["modelos"]} >= {"Regresión lineal", "Random Forest", "SVR"}
     assert abs(sum(x["valor"] for x in m["importancia"]) - 1) < .01
-    assert ml.perfiles()["grupos"] and len(ml.perfiles()["filas"]) == 153
+    assert ml.perfiles()["grupos"] and "Cobija" in ml.perfiles()["ciudades"]
     assert ml.alerta_global()["nivel"] in {"alto", "medio", "bajo"}
 
 
@@ -174,7 +183,8 @@ def test_paginas_y_api_de_modelos():
     for url in ["/prediccion", "/modelos", "/perfiles", "/api/predecir?ciudad=La Paz",
                 "/api/predecir?ciudad=Cobija", "/api/modelos", "/api/perfiles", "/api/alerta"]:
         assert c.get(url).status_code in (200, 400), url
-    assert c.get("/api/predecir?ciudad=Cobija").status_code == 400
+    assert c.get("/api/predecir?ciudad=Cobija").get_json()["pred"]["x"][0] == "2026-07"
+    assert c.get("/api/pronostico?cat=Cobija&meses=3").get_json()["pred"]["x"][0] == "2026-07"
     assert c.get("/api/predecir?ciudad=No existe").status_code == 400
     assert c.get("/api/alerta?ciudad=Potosí").get_json()["nivel"] in {"alto", "medio", "bajo"}
 
@@ -183,7 +193,7 @@ def test_descargas_tratadas_y_crudas():
     c = create_app().test_client()
     limpio = c.get("/api/descargar/ciudades.csv").get_data(as_text=True)
     crudo = c.get("/api/descargar/ciudades.csv?crudo=1").get_data(as_text=True)
-    assert "Cobija" not in limpio
+    assert "Cobija" in limpio
     assert "Cobija" in crudo
     assert len(crudo) > len(limpio)
     assert c.get("/api/limpieza.csv").status_code == 200
