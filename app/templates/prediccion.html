@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block contenido %}
+<section class="card">
+  <div class="controles">
+    <label>Ciudad <select id="ciudad"></select></label>
+    <label>Meses a predecir <select id="meses">
+      <option value="3">3</option><option value="6">6</option>
+      <option value="12" selected>12</option><option value="24">24</option>
+    </select></label>
+  </div>
+  <div id="alertaPred" class="alerta-pico"></div>
+  <div id="kpisPred" class="kpis"></div>
+  <canvas id="prediccion" height="110"></canvas>
+  <p class="nota" id="notaPred"></p>
+  <div id="tablaPred" class="scroll"></div>
+</section>
+<section class="card prosa">
+  <h2>Cómo se calcula</h2>
+  <p>El modelo es una regresión lineal entrenada con la serie tratada de cada ciudad y cinco variables: el mes anterior, el mismo mes del año pasado, el promedio de los últimos 3 meses, el promedio de los últimos 12 meses y el tiempo. Para los meses futuros, cada predicción pasa a formar parte de la historia y alimenta la siguiente.</p>
+  <p>El error típico es el MAE del período de prueba 2023–2026. La banda usa 1,96 veces el RMSE de esa misma prueba. Las cifras son toneladas recolectadas; Cobija queda fuera de las vistas por ciudad.</p>
+</section>
+{% endblock %}

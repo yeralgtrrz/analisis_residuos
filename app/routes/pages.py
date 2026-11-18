@@ -3,7 +3,9 @@ from flask import Blueprint, render_template
 pages = Blueprint("pages", __name__)
 
 PAGINAS = [("panel", "/", "Panel"), ("comparar", "/comparar", "Comparar"),
-           ("pronostico", "/pronostico", "Pronóstico"), ("mapa", "/mapa", "Mapa"), ("tipos", "/tipos", "Por tipo"),
+           ("pronostico", "/pronostico", "Pronóstico"), ("prediccion", "/prediccion", "Predicción"),
+           ("modelos", "/modelos", "Modelos"), ("perfiles", "/perfiles", "Perfiles"),
+           ("mapa", "/mapa", "Mapa"), ("tipos", "/tipos", "Por tipo"),
            ("analisis", "/analisis", "Análisis"), ("simulador", "/simulador", "Simulador"),
            ("calidad", "/calidad", "Calidad"), ("aprende", "/aprende", "Aprende")]
 
@@ -30,6 +32,21 @@ def pronostico():
 @pages.get("/calidad")
 def calidad():
     return _p("calidad")
+
+
+@pages.get("/prediccion")
+def prediccion():
+    return _p("prediccion")
+
+
+@pages.get("/modelos")
+def modelos():
+    return _p("modelos")
+
+
+@pages.get("/perfiles")
+def perfiles():
+    return _p("perfiles")
 
 
 for _id in ("mapa", "tipos", "analisis", "simulador", "aprende"):

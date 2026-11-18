@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block contenido %}
+<section class="card">
+  <h2>Modelo desplegado</h2>
+  <div id="kpisModelo" class="kpis"></div>
+  <p class="nota" id="notaModelo"></p>
+</section>
+<div class="dos">
+  <section class="card">
+    <h2>Comparación de modelos</h2>
+    <div id="tablaModelos" class="scroll"></div>
+    <p class="nota">Métricas de prueba desde 2023, calculadas antes de reentrenar con todos los datos. Menor MAE es mejor.</p>
+  </section>
+  <section class="card">
+    <h2>MAE de prueba (t)</h2>
+    <canvas id="maeModelos" height="100"></canvas>
+  </section>
+</div>
+<div class="dos">
+  <section class="card">
+    <h2>Importancia de variables</h2>
+    <canvas id="importancia" height="100"></canvas>
+    <p class="nota">Importancia del Random Forest sobre la razón <code>toneladas / mm12</code>.</p>
+  </section>
+  <section class="card">
+    <h2>Coeficientes de la regresión lineal</h2>
+    <div id="coeficientes" class="scroll"></div>
+    <p class="nota">El coeficiente indica el cambio esperado en toneladas cuando la variable sube una unidad, manteniendo las demás constantes.</p>
+  </section>
+</div>
+<section class="card">
+  <h2>Ficha del modelo</h2>
+  <div id="fichaModelo" class="scroll"></div>
+</section>
+{% endblock %}

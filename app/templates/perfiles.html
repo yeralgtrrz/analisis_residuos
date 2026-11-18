@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block contenido %}
+<section class="card">
+  <h2>Perfiles de ciudad por año (K-Means, K = 3)</h2>
+  <p class="nota">Cada ciudad-año se agrupa por tamaño (logaritmo de la media), variabilidad (coeficiente de variación) y crecimiento frente al año anterior. El escalado y los grupos se entrenaron con años hasta 2022 y se asignaron también a 2023–2025.</p>
+  <div id="gruposPerfil" class="kpis"></div>
+</section>
+<section class="card">
+  <h2>Mapa de perfiles por año</h2>
+  <div id="matrizPerfiles" class="scroll"></div>
+  <p class="nota">El color indica el grupo; pasa el cursor por una celda para ver toneladas, variabilidad y crecimiento. Solo se incluyen años con 12 meses de dato.</p>
+</section>
+<section class="card">
+  <h2>Detalle ciudad-año</h2>
+  <div id="tablaPerfiles" class="scroll"></div>
+</section>
+{% endblock %}

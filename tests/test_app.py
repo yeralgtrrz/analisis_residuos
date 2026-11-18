@@ -2,6 +2,7 @@ import json
 
 from app import create_app
 from app.services import analytics as an
+from app.services import modelo as ml
 from app.services.data_loader import cargar
 
 
@@ -129,7 +130,8 @@ def test_anios_incompletos():
 
 def test_pronostico_backtesting():
     p = an.pronostico("ciudades", "Total", 12)
-    assert {m["modelo"] for m in p["modelos"]} == {"Holt-Winters", "SARIMA", "Regresión lineal"}
+    assert {m["modelo"] for m in p["modelos"]} == {"Holt-Winters", "SARIMA", "Regresión lineal",
+                                                  "Modelo predictivo"}
     assert p["metodo"] in {m["modelo"] for m in p["modelos"]}
     assert p["banda"] == "error de backtesting"
     assert p["corte"] == "2023-01"
@@ -143,6 +145,38 @@ def test_pronostico_backtesting():
     assert forzado["metodo"] == "SARIMA" and forzado["automatico"] is False
     assert forzado["automatico_metodo"] in set(p["backtest"]["predicciones"])
     assert an.pronostico("ciudades", "Total", 12, "No existe")["automatico"] is True
+
+
+def test_artefactos_del_modelo():
+    m = ml.metricas()
+    assert m["features"] == ["lag1", "lag12", "mm3", "mm12", "t"]
+    assert m["modelo"] == "Regresión lineal"
+    assert 700 < m["metricas"]["mae"] < 1000
+    assert len(m["modelos"]) == 6
+    assert {x["nombre"] for x in m["modelos"]} >= {"Regresión lineal", "Random Forest", "SVR"}
+    assert abs(sum(x["valor"] for x in m["importancia"]) - 1) < .01
+    assert ml.perfiles()["grupos"] and len(ml.perfiles()["filas"]) == 153
+    assert ml.alerta_global()["nivel"] in {"alto", "medio", "bajo"}
+
+
+def test_prediccion_recursiva():
+    p = ml.predecir("La Paz", 6)
+    assert len(p["pred"]["x"]) == 6 and len(p["pred"]["y"]) == 6
+    assert p["pred"]["x"][0] == "2026-07"
+    assert all(v >= 0 for v in p["pred"]["y"])
+    assert all(a <= b <= c for a, b, c in zip(p["pred"]["min"], p["pred"]["y"], p["pred"]["max"]))
+    assert p["alerta"]["ciudad"] == "La Paz"
+    assert p["mae"] > 0
+
+
+def test_paginas_y_api_de_modelos():
+    c = create_app().test_client()
+    for url in ["/prediccion", "/modelos", "/perfiles", "/api/predecir?ciudad=La Paz",
+                "/api/predecir?ciudad=Cobija", "/api/modelos", "/api/perfiles", "/api/alerta"]:
+        assert c.get(url).status_code in (200, 400), url
+    assert c.get("/api/predecir?ciudad=Cobija").status_code == 400
+    assert c.get("/api/predecir?ciudad=No existe").status_code == 400
+    assert c.get("/api/alerta?ciudad=Potosí").get_json()["nivel"] in {"alto", "medio", "bajo"}
 
 
 def test_descargas_tratadas_y_crudas():
@@ -166,7 +200,8 @@ def test_log_limpieza_completo():
 
 def test_endpoints():
     c = create_app().test_client()
-    for url in ["/", "/comparar", "/pronostico", "/calidad",
+    for url in ["/", "/comparar", "/pronostico", "/prediccion", "/modelos", "/perfiles", "/calidad",
+                "/api/modelos", "/api/perfiles", "/api/alerta",
                 "/api/meta", "/api/kpis", "/api/ranking?anio=2024",
                 "/api/composicion", "/api/heatmap?cat=La Paz", "/api/faltantes",
                 "/api/cobertura?ciudad=Sucre", "/api/consistencia", "/api/limpieza",

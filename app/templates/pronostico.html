@@ -9,6 +9,7 @@
       <option value="Holt-Winters">Holt-Winters</option>
       <option value="SARIMA">SARIMA</option>
       <option value="Regresión lineal">Regresión lineal</option>
+      <option value="Modelo predictivo">Modelo predictivo (5 variables)</option>
     </select></label>
     <span id="metodo" class="nota"></span>
   </div>
@@ -25,6 +26,6 @@
   <p class="nota">El backtesting y los residuos usan la serie tratada, sin imputación y con entrenamiento anterior a 2023. Las barras de MAE se leen en toneladas (eje izquierdo) y las de MAPE en porcentaje (eje derecho). El Total es el dato oficial del INE e incluye Cobija; las ciudades excluyen Cobija.</p>
 
   <div id="modelos" class="scroll"></div>
-  <p class="nota">Se prueban tres modelos y se elige el de menor MAE. También podés forzar uno para comparar sus proyecciones. La banda de confianza usa el error real del backtesting (no los residuos del ajuste), por eso es menos optimista.</p>
+  <p class="nota">Se prueban cuatro modelos y se elige el de menor MAE. También podés forzar uno para comparar sus proyecciones. La banda de confianza usa el error real del backtesting (no los residuos del ajuste), por eso es menos optimista.</p>
 </section>
 {% endblock %}

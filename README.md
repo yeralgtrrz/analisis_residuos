@@ -20,9 +20,11 @@ Las gráficas usan Chart.js desde un CDN, así que la primera carga necesita int
 ```
 residuos-bolivia/
 ├── README.md               Este archivo
-├── requirements.txt        Dependencias (Flask, pandas, openpyxl, statsmodels)
+├── requirements.txt        Dependencias (Flask, pandas, openpyxl, scikit-learn, joblib, statsmodels)
 ├── run.py                  Punto de entrada: python run.py
 ├── config.py               Rutas a los 3 Excel
+├── tools/
+│   └── entrenar_modelos.py Reentrena los artefactos de `app/models/`
 ├── data/
 │   └── raw/                Excel originales del INE (no se modifican)
 │       ├── ciudades_mensual_2005_2026.xlsx    Ciudad × mes
@@ -33,21 +35,28 @@ residuos-bolivia/
 │   ├── routes/
 │   │   ├── pages.py        Páginas HTML y reporte
 │   │   └── api.py          API JSON /api/* y descarga CSV/Excel
+│   ├── models/             Regresión lineal, métricas, perfiles y clasificador de picos
 │   ├── services/
 │   │   ├── data_loader.py  Lee los Excel, normaliza y elimina duplicados
-│   │   └── analytics.py    KPIs, tratamientos, Hampel, consistencia y backtesting
+│   │   ├── analytics.py    KPIs, tratamientos, Hampel, consistencia y backtesting
+│   │   └── modelo.py       Predicción recursiva, métricas, K-Means y alerta de picos
 │   ├── templates/
-│   │   ├── base.html       Cabecera, menú, tema y pie comunes
+│   │   ├── base.html       Cabecera, menú, alerta global, tema y pie comunes
 │   │   ├── panel.html      KPIs, serie de tiempo, ranking, composición por tipo
 │   │   ├── comparar.html   Ciudad vs. ciudad y heatmap mes × año
 │   │   ├── pronostico.html Proyección con backtesting y banda de error real
+│   │   ├── prediccion.html Predicción mensual por ciudad con el modelo desplegado
+│   │   ├── modelos.html    Comparación de modelos, importancia y coeficientes
+│   │   ├── perfiles.html   Perfiles ciudad-año de K-Means (K = 3)
 │   │   └── calidad.html    Faltantes, rachas, cobertura, consistencia y LOG
 │   └── static/
 │       ├── css/styles.css  Estilos (tema claro/oscuro y estilos de impresión)
 │       └── js/app.js       Lógica de cada página (fetch a la API + Chart.js)
 └── tests/
-    └── test_app.py         Lectura, completitud, pronóstico y endpoints
+    └── test_app.py         Lectura, completitud, modelo, pronóstico y endpoints
 ```
+
+Los artefactos de `app/models/` se generan con `python tools/entrenar_modelos.py` o con la última celda del notebook (`MODELO PARA LA APP FLASK`). La app solo los lee; no reentrena al abrir una página.
 
 ## Criterios de datos
 
@@ -58,7 +67,9 @@ residuos-bolivia/
 - **Serie B (ciudades)**: sin interpolación. Se recorta Sucre antes de 2015 y se eliminan las filas con `ton` nulo (menos del 5 % de la serie). Los huecos se ven como cortes y la cobertura mensual se reporta en Calidad.
 - **Ciudad × Tipo (A)**: mismo criterio que B (sin Cobija y Sucre desde 2015). Los tipos sin dato se marcan `no_reportado = True`, se rellenan con 0 y no se imputan. Así la suma de tipos reportados coincide con el total de B.
 - **Atípicos**: Hampel local sobre el logaritmo de la serie, ventana de 13 meses y 4 MAD. Se reporta `out_local`, `ton_final`, `mediana_local` y `desvio_pct`; el dato atípico se winsoriza con los límites locales.
-- **Pronóstico**: entrenamiento anterior a `2023-01-01` y prueba desde esa fecha. Se comparan Holt-Winters, SARIMA y regresión lineal estacional con MAE/MAPE, se elige el de menor MAE y la banda usa el error del backtesting. La interpolación se usa solo internamente para regularizar la serie mensual.
+- **Pronóstico**: entrenamiento anterior a `2023-01-01` y prueba desde esa fecha. Se comparan Holt-Winters, SARIMA, regresión lineal estacional y el modelo predictivo de 5 variables con MAE/MAPE, se elige el de menor MAE y la banda usa el error del backtesting. La interpolación se usa solo internamente para regularizar la serie mensual.
+- **Modelo predictivo**: regresión lineal con `lag1`, `lag12`, `mm3`, `mm12` y `t` sobre las 9 ciudades tratadas. Con corte 2023: MAE 875 t, RMSE 1 618 t y R² 0,987. Se reentrena con todos los datos y se guarda en `app/models/regresion_lineal.joblib`. Las predicciones son recursivas: cada valor proyectado alimenta el mes siguiente.
+- **Perfiles y alerta**: K-Means K=3 sobre perfiles ciudad-año (`lmedia`, `cv`, `crec`) escalados y entrenados hasta 2022. El clasificador de picos usa Random Forest con submuestreo de la clase mayoritaria y umbral P90 de la razón `y/mm12`; la alerta muestra la probabilidad del mes siguiente (alto ≥ 35 %, medio ≥ 15 %).
 - **Descargas**: por defecto entregan datos tratados (sin Cobija en las vistas por ciudad); `?crudo=1` entrega los datos completos con Cobija, deduplicados y con nombres normalizados.
 
 ## Qué incluye
@@ -67,7 +78,10 @@ residuos-bolivia/
 |---|---|
 | Panel | KPIs del último año completo, serie mensual/anual filtrable por ciudad y años, ranking de ciudades, composición por tipo de procedencia |
 | Comparar | Varias ciudades a la vez y heatmap de estacionalidad (mes × año) |
-| Pronóstico | Backtesting con prueba desde 2023 de Holt-Winters, SARIMA y regresión lineal; gráficos de real vs. cada modelo, barras MAE/MAPE, residuos y selector de modelo (automático o forzado); banda de confianza fuera de muestra |
+| Pronóstico | Backtesting con prueba desde 2023 de Holt-Winters, SARIMA, regresión lineal estacional y modelo predictivo; gráficos de real vs. cada modelo, barras MAE/MAPE, residuos y selector de modelo (automático o forzado); banda de confianza fuera de muestra |
+| Predicción | Predicción mensual por ciudad con el modelo de 5 variables, intervalo, error típico, tabla de meses y alerta de pico |
+| Modelos | Comparación de regresión lineal, Random Forest, Bagging, Boosting, Stacking y SVR; MAE/RMSE/R², importancia de variables y coeficientes |
+| Perfiles | Matriz ciudad × año con los 3 grupos de K-Means y detalle de tamaño, variabilidad y crecimiento |
 | Mapa | Mapa de Bolivia con departamentos y burbujas por ciudad, con selector de año |
 | Por tipo | Evolución y composición por tipo de procedencia de cada ciudad, con `no_reportado = 0` |
 | Análisis | Serie tratada, mediana local, atípicos Hampel y correlación entre ciudades |
@@ -87,7 +101,11 @@ residuos-bolivia/
 | `/api/ranking?anio=2024` | Toneladas por ciudad (incluye si el año es parcial) |
 | `/api/composicion` | Toneladas por tipo de procedencia y año (excluye años incompletos) |
 | `/api/heatmap?cat=La Paz` | Matriz mes × año tratada; `crudo=1` devuelve la original, incluida Cobija |
-| `/api/pronostico?cat=Total&meses=12&modelo=auto` | Backtesting, métricas, residuos y proyección; `modelo` puede ser `auto`, `Holt-Winters`, `SARIMA` o `Regresión lineal` |
+| `/api/pronostico?cat=Total&meses=12&modelo=auto` | Backtesting, métricas, residuos y proyección; `modelo` puede ser `auto`, `Holt-Winters`, `SARIMA`, `Regresión lineal` o `Modelo predictivo` |
+| `/api/predecir?ciudad=La Paz&meses=12` | Predicción recursiva, banda, error típico y alerta de pico del modelo desplegado |
+| `/api/modelos` | Métricas de los 6 modelos, coeficientes e importancia de variables |
+| `/api/perfiles` | Grupos, años y detalle ciudad-año de K-Means |
+| `/api/alerta?ciudad=La Paz` | Probabilidad de pico del mes siguiente; sin `ciudad`, devuelve la más alta del país |
 | `/api/mapa?anio=2025` | Departamento y burbujas del mapa |
 | `/api/ciudad-tipo?ciudad=La Paz` | Ciudad × tipo anual tratado, con `no_reportado`, `anios_incompletos` y `totales`; `crudo=1` devuelve el original, incluida Cobija |
 | `/api/anomalias?cat=Total` | Hampel local, `ton_final`, mediana, desvíos y serie cruda |

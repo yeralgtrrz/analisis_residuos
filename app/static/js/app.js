@@ -85,7 +85,7 @@ const paginas = {
         { label: "Máximo", data: [...pad, ...p.pred.max], borderColor: "#e0a52666", pointRadius: 0 }] }, options: { scales: ejes } });
 
       const bt = p.backtest;
-      const colores = { "Holt-Winters": COLORES[0], "SARIMA": COLORES[1], "Regresión lineal": COLORES[2] };
+      const colores = { "Holt-Winters": COLORES[0], "SARIMA": COLORES[1], "Regresión lineal": COLORES[2], "Modelo predictivo": COLORES[3] };
       const predicciones = Object.entries(bt.predicciones).map(([nombre, valores], i) => ({
         label: nombre, data: valores, borderColor: colores[nombre] || COLORES[(i + 3) % COLORES.length],
         borderWidth: nombre === p.metodo ? 2.5 : 1.5, borderDash: nombre === p.metodo ? [] : [5, 4],
@@ -145,6 +145,88 @@ const paginas = {
     };
     $("#ciudadImp").addEventListener("change", dibujarCob);
     dibujarCob();
+  },
+  async prediccion() {
+    const meta = await get("/api/meta");
+    $("#ciudad").innerHTML = opciones(meta.ciudades, "La Paz");
+    const run = async () => {
+      const p = await get(`/api/predecir?ciudad=${encodeURIComponent($("#ciudad").value)}&meses=${$("#meses").value}`);
+      if (p.error) {
+        $("#alertaPred").innerHTML = `<span class="aviso error">${p.error}</span>`;
+        return;
+      }
+      const a = p.alerta || {};
+      $("#alertaPred").className = "alerta-pico " + (a.nivel || "bajo");
+      $("#alertaPred").textContent = a.nivel === "bajo"
+        ? `Sin alerta alta de pico para ${p.fecha_ultima}: la probabilidad estimada para el mes siguiente es ${a.probabilidad} %.`
+        : `Alerta ${a.nivel} de pico en ${p.ciudad}: ${a.probabilidad} % de probabilidad para el mes siguiente.`;
+      $("#kpisPred").innerHTML = [
+        [fmt(p.pred.y[0]) + " t", `Primer mes (${p.pred.x[0]})`],
+        [fmt(p.promedio) + " t", "Promedio mensual proyectado"],
+        [fmt(p.total) + " t", `Total en ${p.meses} meses`],
+        [fmt(p.mae) + " t", `Error típico (MAE de prueba)`],
+      ].map(([a, b]) => `<div class="kpi"><b>${a}</b><span>${b}</span></div>`).join("");
+      const h = p.historico, pad = new Array(h.x.length).fill(null);
+      dibujar("prediccion", { type: "line", data: { labels: [...h.x, ...p.pred.x], datasets: [
+        { label: "Histórico", data: [...h.y, ...new Array(p.pred.x.length).fill(null)], borderColor: COLORES[0], pointRadius: 0, spanGaps: true },
+        { label: "Predicción", data: [...pad, ...p.pred.y], borderColor: COLORES[1], borderDash: [6, 4], pointRadius: 2 },
+        { label: "Mínimo", data: [...pad, ...p.pred.min], borderColor: "#e0a52666", pointRadius: 0, fill: "+1", backgroundColor: "#e0a52622" },
+        { label: "Máximo", data: [...pad, ...p.pred.max], borderColor: "#e0a52666", pointRadius: 0 },
+      ] }, options: { scales: ejes } });
+      $("#notaPred").textContent = `Último dato real: ${p.fecha_ultima}. Modelo de 5 variables; MAE de prueba ${fmt(p.mae)} t, RMSE ${fmt(p.rmse)} t, R² ${p.r2}. La serie tratada no se interpola para mostrar.`;
+      $("#tablaPred").innerHTML = `<table class="hm"><tr><th>Mes</th><th>Toneladas</th><th>Mínimo</th><th>Máximo</th></tr>` +
+        p.pred.x.map((x, i) => `<tr><th>${x}</th><td>${fmt(p.pred.y[i])}</td><td>${fmt(p.pred.min[i])}</td><td>${fmt(p.pred.max[i])}</td></tr>`).join("") + "</table>";
+    };
+    $("#ciudad").addEventListener("change", run);
+    $("#meses").addEventListener("change", run);
+    run();
+  },
+  async modelos() {
+    const m = await get("/api/modelos");
+    if (m.error) { $("#notaModelo").textContent = m.error; return; }
+    const k = m.metricas;
+    $("#kpisModelo").innerHTML = [
+      [m.modelo, "Modelo desplegado"],
+      [fmt(k.mae) + " t", "MAE de prueba"],
+      [fmt(k.rmse) + " t", "RMSE de prueba"],
+      [k.r2.toFixed(3), "R² de prueba"],
+      [fmt(m.entrenamiento.filas), "Filas de entrenamiento"],
+    ].map(([a, b]) => `<div class="kpi"><b>${a}</b><span>${b}</span></div>`).join("");
+    $("#notaModelo").textContent = `Corte ${m.corte}; prueba desde ${m.prueba.desde} (${fmt(m.prueba.filas)} filas). Entrenado con datos hasta ${m.entrenamiento.hasta}. Actualizado: ${m.actualizado.slice(0, 10)}.`;
+    $("#tablaModelos").innerHTML = `<table class="hm"><tr><th>Modelo</th><th>Objetivo</th><th>MAE</th><th>RMSE</th><th>R²</th></tr>` +
+      m.modelos.map((x) => `<tr><th>${x.nombre}</th><td>${x.objetivo}</td><td>${fmt(x.mae)}</td><td>${fmt(x.rmse)}</td><td>${x.r2.toFixed(3)}</td></tr>`).join("") + "</table>";
+    dibujar("maeModelos", { type: "bar", data: { labels: m.modelos.map((x) => x.nombre), datasets: [
+      { label: "MAE (t)", data: m.modelos.map((x) => x.mae), backgroundColor: m.modelos.map((x) => x.nombre === m.modelo ? COLORES[1] : COLORES[0]) }] },
+      options: { indexAxis: "y", plugins: { legend: { display: false } }, scales: { x: { ticks: { callback: (v) => fmt(v) } } } } });
+    const imp = [...m.importancia].sort((a, b) => a.valor - b.valor);
+    dibujar("importancia", { type: "bar", data: { labels: imp.map((x) => x.variable), datasets: [
+      { label: "Importancia", data: imp.map((x) => x.valor), backgroundColor: COLORES[3] }] },
+      options: { indexAxis: "y", plugins: { legend: { display: false } } } });
+    $("#coeficientes").innerHTML = `<table class="hm"><tr><th>Variable</th><th>Coeficiente</th></tr>` +
+      m.coeficientes.map((x) => `<tr><th>${x.variable}</th><td>${x.coeficiente.toFixed(3)}</td></tr>`).join("") +
+      `<tr><th>Intercepto</th><td>${m.intercepto.toFixed(3)}</td></tr></table>`;
+    $("#fichaModelo").innerHTML = `<table class="hm"><tr><th>Campo</th><th>Valor</th></tr>` +
+      [["Modelo", m.modelo], ["Variables", m.features.join(", ")], ["Objetivo", m.objetivo],
+       ["Corte", m.corte], ["Entrenamiento", `${m.entrenamiento.desde} a ${m.entrenamiento.hasta}`],
+       ["Filas de entrenamiento", fmt(m.entrenamiento.filas)], ["Prueba", `${m.prueba.desde} (${fmt(m.prueba.filas)} filas)`],
+       ["MAE", `${fmt(k.mae)} t`], ["RMSE", `${fmt(k.rmse)} t`], ["R²", k.r2]].map(([a, b]) =>
+        `<tr><th>${a}</th><td>${b}</td></tr>`).join("") + "</table>";
+  },
+  async perfiles() {
+    const p = await get("/api/perfiles");
+    if (p.error) { $("#matrizPerfiles").innerHTML = `<p class="aviso error">${p.error}</p>`; return; }
+    const clase = (nombre) => nombre === "En expansión" ? "perfil-expansion" : (nombre === "Volumen alto estable" ? "perfil-alto" : "perfil-bajo");
+    $("#gruposPerfil").innerHTML = p.grupos.map((g) =>
+      `<div class="kpi ${clase(g.nombre)}"><b>${g.nombre}</b><span>${fmt(g.toneladas_medias)} t de media · CV ${g.cv} · crecimiento ${(g.crecimiento * 100).toFixed(1)} %</span></div>`).join("");
+    const por = new Map(p.filas.map((x) => [x.ciudad + "|" + x.anio, x]));
+    $("#matrizPerfiles").innerHTML = `<table class="hm perfiles"><tr><th>Ciudad</th>${p.anios.map((a) => `<th>${a}</th>`).join("")}</tr>` +
+      p.ciudades.map((c) => `<tr><th>${c}</th>${p.anios.map((a) => {
+        const x = por.get(c + "|" + a);
+        if (!x) return "<td></td>";
+        return `<td class="${clase(x.perfil)}" title="${c} ${a}: ${fmt(x.toneladas)} t, CV ${x.cv}, crecimiento ${(x.crecimiento * 100).toFixed(1)} %">${x.perfil === "En expansión" ? "E" : (x.perfil === "Volumen alto estable" ? "A" : "B")}</td>`;
+      }).join("")}</tr>`).join("") + "</table>";
+    $("#tablaPerfiles").innerHTML = `<table class="hm"><tr><th>Ciudad</th><th>Año</th><th>Perfil</th><th>Toneladas medias</th><th>CV</th><th>Crecimiento</th></tr>` +
+      p.filas.map((x) => `<tr><th>${x.ciudad}</th><td>${x.anio}</td><td>${x.perfil}</td><td>${fmt(x.toneladas)}</td><td>${x.cv}</td><td>${(x.crecimiento * 100).toFixed(1)} %</td></tr>`).join("") + "</table>";
   },
 };
 const tabla = (cols, filas, color) => `<table class="hm"><tr><th></th>${cols.map((c) => `<th>${c}</th>`).join("")}</tr>` + filas.map(([n, v]) => `<tr><th>${n}</th>${v.map(color).join("")}</tr>`).join("") + "</table>";
@@ -257,6 +339,21 @@ Object.assign(paginas, {
   },
 });
 
+async function initAlertaGlobal() {
+  const el = $("#alertaGlobal");
+  if (!el) return;
+  try {
+    const a = await get("/api/alerta");
+    if (a.error) return;
+    el.classList.remove("oculto");
+    el.classList.add(a.nivel);
+    el.innerHTML = a.nivel === "bajo"
+      ? `<b>Sin alerta de pico</b> para ${a.fecha}. La probabilidad más alta entre las ciudades es ${a.probabilidad} % (${a.ciudad}).`
+      : `<b>Alerta ${a.nivel} de pico</b> en ${a.ciudad} para ${a.fecha}: ${a.probabilidad} % de probabilidad.`;
+  } catch (e) { /* el modelo puede no estar disponible */ }
+}
+
+document.querySelector("#imprimir")?.addEventListener("click", () => window.print());
 const tema = localStorage.getItem("tema") || (matchMedia("(prefers-color-scheme: dark)").matches ? "oscuro" : "claro");
 document.documentElement.dataset.tema = tema;
 document.querySelector("#tema")?.addEventListener("click", () => {
@@ -270,3 +367,4 @@ try {
 } catch (e) { /* Chart aún no cargado */ }
 
 paginas[document.body.dataset.page]?.();
+initAlertaGlobal();

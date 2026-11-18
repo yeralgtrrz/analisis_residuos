@@ -3,6 +3,7 @@ import io
 from flask import Blueprint, jsonify, request, send_file
 
 from ..services import analytics as an
+from ..services import modelo as ml
 from ..services.data_loader import serie
 
 api = Blueprint("api", __name__)
@@ -136,3 +137,37 @@ def anomalias():
 @api.get("/correlacion")
 def correlacion():
     return jsonify(an.correlacion())
+
+
+@api.get("/predecir")
+def predecir():
+    try:
+        meses = min(24, max(1, int(request.args.get("meses", 12))))
+        return jsonify(ml.predecir(request.args.get("ciudad", "La Paz"), meses))
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+
+
+@api.get("/modelos")
+def modelos():
+    datos = ml.metricas()
+    if datos is None:
+        return jsonify({"error": "El modelo todavía no fue entrenado."}), 503
+    return jsonify(datos)
+
+
+@api.get("/perfiles")
+def perfiles():
+    datos = ml.perfiles()
+    if datos is None:
+        return jsonify({"error": "Los perfiles todavía no fueron entrenados."}), 503
+    return jsonify(datos)
+
+
+@api.get("/alerta")
+def alerta():
+    ciudad = request.args.get("ciudad")
+    datos = ml.alerta(ciudad) if ciudad else ml.alerta_global()
+    if datos is None:
+        return jsonify({"error": "El clasificador de picos no está disponible."}), 503
+    return jsonify(datos)

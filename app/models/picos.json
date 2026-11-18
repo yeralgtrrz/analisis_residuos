@@ -1,0 +1,16 @@
+{
+  "umbral_ratio": 1.1665,
+  "filas": 2032,
+  "picos_entrenamiento": 166,
+  "filas_entrenamiento": 1654,
+  "features": [
+    "lag1",
+    "lag12",
+    "mm3",
+    "mm12",
+    "t",
+    "mes_sin",
+    "mes_cos"
+  ],
+  "actualizado": "2026-11-17T06:02:25+00:00"
+}

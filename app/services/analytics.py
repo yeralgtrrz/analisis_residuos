@@ -328,6 +328,9 @@ def _ajustar(nombre, s, pasos):
             m = SARIMAX(s, order=(1, 1, 1), seasonal_order=(1, 1, 0, 12),
                         enforce_stationarity=False, enforce_invertibility=False).fit(disp=False)
             return np.asarray(m.forecast(pasos), float)
+        if nombre == "Modelo predictivo":
+            from .modelo import pronosticar_serie
+            return pronosticar_serie(s, pasos)
         return np.asarray(_regresion(s, pasos), float)
 
 
@@ -341,7 +344,7 @@ def _mape(real, pred):
     return float(np.nanmean(np.abs((real[ok] - pred[ok]) / real[ok])) * 100) if ok.any() else float("nan")
 
 
-NOMBRES = ("Holt-Winters", "SARIMA", "Regresión lineal")
+NOMBRES = ("Holt-Winters", "SARIMA", "Regresión lineal", "Modelo predictivo")
 
 
 @lru_cache(maxsize=128)

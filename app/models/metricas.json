@@ -1,0 +1,116 @@
+{
+  "modelo": "Regresión lineal",
+  "features": [
+    "lag1",
+    "lag12",
+    "mm3",
+    "mm12",
+    "t"
+  ],
+  "objetivo": "toneladas",
+  "corte": "2023-01",
+  "entrenamiento": {
+    "desde": "2006-01",
+    "hasta": "2026-06",
+    "filas": 2032
+  },
+  "prueba": {
+    "desde": "2023-01",
+    "filas": 378
+  },
+  "metricas": {
+    "mae": 875.4567,
+    "rmse": 1617.6834,
+    "r2": 0.9865
+  },
+  "coeficientes": [
+    {
+      "variable": "lag1",
+      "coeficiente": 0.27864
+    },
+    {
+      "variable": "lag12",
+      "coeficiente": 0.243849
+    },
+    {
+      "variable": "mm3",
+      "coeficiente": 0.414418
+    },
+    {
+      "variable": "mm12",
+      "coeficiente": 0.068802
+    },
+    {
+      "variable": "t",
+      "coeficiente": -1.489745
+    }
+  ],
+  "intercepto": 255.935946,
+  "actualizado": "2026-11-17T06:02:25+00:00",
+  "modelos": [
+    {
+      "nombre": "Regresión lineal",
+      "mae": 875.5,
+      "rmse": 1617.7,
+      "r2": 0.9865,
+      "objetivo": "nivel"
+    },
+    {
+      "nombre": "Random Forest",
+      "mae": 1537.9,
+      "rmse": 2565.5,
+      "r2": 0.9661,
+      "objetivo": "razón y/mm12"
+    },
+    {
+      "nombre": "Bagging",
+      "mae": 1440.7,
+      "rmse": 2465.0,
+      "r2": 0.9687,
+      "objetivo": "razón y/mm12"
+    },
+    {
+      "nombre": "Boosting",
+      "mae": 1141.9,
+      "rmse": 1945.2,
+      "r2": 0.9805,
+      "objetivo": "razón y/mm12"
+    },
+    {
+      "nombre": "Stacking",
+      "mae": 1126.2,
+      "rmse": 1920.5,
+      "r2": 0.981,
+      "objetivo": "razón y/mm12"
+    },
+    {
+      "nombre": "SVR",
+      "mae": 1458.6,
+      "rmse": 2878.7,
+      "r2": 0.9573,
+      "objetivo": "razón y/mm12"
+    }
+  ],
+  "importancia": [
+    {
+      "variable": "lag1",
+      "valor": 0.2377
+    },
+    {
+      "variable": "lag12",
+      "valor": 0.2051
+    },
+    {
+      "variable": "mm3",
+      "valor": 0.1204
+    },
+    {
+      "variable": "mm12",
+      "valor": 0.2577
+    },
+    {
+      "variable": "t",
+      "valor": 0.1791
+    }
+  ]
+}

@@ -18,10 +18,12 @@
       <a href="/api/descargar/ciudades.xlsx" title="Datos tratados, sin Cobija en vistas por ciudad">Excel limpio</a>
       <a href="/api/descargar/ciudades.csv?crudo=1" title="Datos completos con Cobija, deduplicados y renombrados">CSV crudo</a>
     </span>
+    <button id="imprimir" class="tema" type="button" title="Imprimir esta página">Imprimir</button>
     <button id="tema" class="tema" type="button" aria-label="Cambiar entre tema claro y oscuro" title="Cambiar tema">◐</button>
   </header>
+  <div id="alertaGlobal" class="alerta-pico oculto" role="status"></div>
   <main>{% block contenido %}{% endblock %}</main>
-  <footer>Fuente: INE y Gobiernos Autónomos Municipales. Toneladas recolectadas; (p) = preliminar.</footer>
+  <footer>Fuente: INE y Gobiernos Autónomos Municipales. Toneladas recolectadas; (p) = preliminar. Cobija se excluye de las vistas y modelos por ciudad; el Total nacional del INE la incluye.</footer>
   <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
 </html>
