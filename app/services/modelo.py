@@ -190,7 +190,8 @@ def entrenar_artefactos():
                           "hasta": d.fecha.max().strftime("%Y-%m"),
                           "filas": int(len(d))},
         "prueba": {"desde": d.loc[te, "fecha"].min().strftime("%Y-%m"),
-                   "filas": int(te.sum())},
+                   "filas": int(te.sum()),
+                   "media_mensual": round(float(yte.mean()), 4)},
         "metricas": {k: round(v, 4) for k, v in met.items()},
         "coeficientes": [{"variable": v, "coeficiente": round(float(c), 6)}
                          for v, c in zip(FEATURES, final.coef_)],

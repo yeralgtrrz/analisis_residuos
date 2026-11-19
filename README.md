@@ -42,8 +42,7 @@ residuos-bolivia/
 │   │   └── modelo.py       Predicción recursiva, métricas, K-Means y alerta de picos
 │   ├── templates/
 │   │   ├── base.html       Cabecera, menú, alerta global, tema y pie comunes
-│   │   ├── panel.html      KPIs, serie de tiempo, ranking, composición por tipo
-│   │   ├── comparar.html   Ciudad vs. ciudad y heatmap mes × año
+│   │   ├── comparar.html   KPIs, ranking, composición, comparación y estacionalidad
 │   │   ├── pronostico.html Proyección con backtesting y banda de error real
 │   │   ├── prediccion.html Predicción mensual por ciudad con el modelo desplegado
 │   │   ├── modelos.html    Comparación de modelos, importancia y coeficientes
@@ -76,8 +75,7 @@ Los artefactos de `app/models/` se generan con `python tools/entrenar_modelos.py
 
 | Página | Contenido |
 |---|---|
-| Panel | KPIs del último año completo, serie mensual/anual filtrable por ciudad y años, ranking de ciudades, composición por tipo de procedencia |
-| Comparar | Varias ciudades a la vez y heatmap de estacionalidad (mes × año) |
+| Comparar | Página inicial con KPIs del último año completo, ranking, composición por procedencia, comparación entre ciudades, estacionalidad y correlación |
 | Pronóstico | Backtesting con prueba desde 2023 de Holt-Winters, SARIMA, regresión lineal estacional y modelo predictivo; gráficos de real vs. cada modelo, barras MAE/MAPE, residuos y selector de modelo (automático o forzado); banda de confianza fuera de muestra |
 | Predicción | Predicción mensual por ciudad con el modelo de 5 variables, intervalo, error típico, tabla de meses y alerta de pico |
 | Modelos | Comparación de regresión lineal, Random Forest, Bagging, Boosting, Stacking y SVR; MAE/RMSE/R², importancia de variables y coeficientes |

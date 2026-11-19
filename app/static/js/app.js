@@ -8,6 +8,10 @@ function dibujar(id, config) {
   charts[id] = new Chart($("#" + id), config);
 }
 const opciones = (arr, sel) => arr.map((v) => `<option ${v == sel ? "selected" : ""}>${v}</option>`).join("");
+const tarjetaKpi = ([valor, titulo, descripcion]) => `<div class="kpi">
+  <span class="titulo-tarjeta">${titulo}</span><strong class="kpi-valor">${valor}</strong>
+  ${descripcion ? `<p class="kpi-descripcion">${descripcion}</p>` : ""}
+</div>`;
 const cabeceraTabla = (titulos, numericas = []) => `<thead><tr>${titulos.map((titulo, i) =>
   `<th scope="col"${numericas.includes(i) ? ' class="numero"' : ""}>${titulo}</th>`
 ).join("")}</tr></thead>`;
@@ -16,27 +20,24 @@ const tablaCalor = (encabezados, filas, celda) => `<table class="tabla-datos tab
 const ejes = { y: { ticks: { callback: (v) => fmt(v) } } };
 
 const paginas = {
-  async panel() {
-    const meta = await get("/api/meta");
-    const k = await get("/api/kpis");
+  async comparar() {
+    const [meta, k, c, corr] = await Promise.all([
+      get("/api/meta"), get("/api/kpis"), get("/api/composicion"), get("/api/correlacion"),
+    ]);
     $("#kpis").innerHTML = [
       [fmt(k.total) + " t", `Recolectado en ${k.anio}`],
       [(k.variacion * 100).toFixed(1) + " %", `Variación vs ${k.anio - 1}`],
       [k.ciudad_top, `Ciudad con más residuos (${fmt(k.ciudad_top_ton)} t)`],
       [k.mes_pico, `Mes pico de ${k.anio} (${fmt(k.mes_pico_ton)} t)`],
-    ].map(([a, b]) => `<div class="kpi"><b>${a}</b><span>${b}</span></div>`).join("");
+    ].map(tarjetaKpi).join("");
     $("#anioRank").innerHTML = opciones(meta.anios_completos || meta.anios, k.anio);
     const rank = async () => {
       const r = await get("/api/ranking?anio=" + $("#anioRank").value);
       dibujar("ranking", { type: "bar", data: { labels: r.labels, datasets: [{ label: "Toneladas", data: r.values, backgroundColor: COLORES[0] }] }, options: { indexAxis: "y", plugins: { legend: { display: false } } } });
     };
     $("#anioRank").addEventListener("change", rank);
-    const c = await get("/api/composicion");
     dibujar("composicion", { type: "bar", data: { labels: c.anios, datasets: Object.entries(c.series).map(([n, y], i) => ({ label: n, data: y, backgroundColor: COLORES[i] })) }, options: { scales: { x: { stacked: true }, y: { stacked: true, ticks: { callback: fmt } } } } });
-    await rank();
-  },
-  async comparar() {
-    const meta = await get("/api/meta");
+
     $("#chips").innerHTML = meta.ciudades.map((c, i) => `<label><input type="checkbox" value="${c}" ${i < 3 ? "checked" : ""}>${c}</label>`).join("");
     const comparar = async () => {
       const cats = [...document.querySelectorAll("#chips input:checked")].map((i) => i.value);
@@ -55,7 +56,8 @@ const paginas = {
       $("#heatmap").innerHTML = tablaCalor(["Año", ...h.meses], h.anios.map((a, i) => [a, h.valores[i]]), celda);
     };
     $("#hmCiudad").addEventListener("change", hm);
-    comparar(); hm();
+    $("#corr").innerHTML = tablaCalor(["Ciudad", ...corr.ciudades], corr.ciudades.map((c, i) => [c, corr.valores[i]]), (v) => v == null ? "<td></td>" : `<td style="background:rgba(15,92,110,${Math.max(0, v).toFixed(2)});color:${v > .5 ? "#fff" : "#14232b"}">${v}</td>`);
+    await Promise.all([rank(), comparar(), hm()]);
   },
   async pronostico() {
     const meta = await get("/api/meta");
@@ -160,7 +162,7 @@ const paginas = {
         [fmt(total / meses) + " t", "Promedio mensual proyectado"],
         [fmt(total) + " t", `Total en ${meses} meses`],
         [fmt(p.mae) + " t", "Error típico (MAE de prueba)"],
-      ].map(([a, b]) => `<div class="kpi"><b>${a}</b><span>${b}</span></div>`).join("");
+      ].map(tarjetaKpi).join("");
       const h = p.historico, pad = new Array(h.x.length).fill(null);
       dibujar("prediccion", { type: "line", data: { labels: [...h.x, ...pred.x], datasets: [
         { label: "Histórico", data: [...h.y, ...new Array(pred.x.length).fill(null)], borderColor: COLORES[0], pointRadius: 0, spanGaps: false },
@@ -244,13 +246,27 @@ const paginas = {
     const m = await get("/api/modelos");
     if (m.error) { $("#notaModelo").textContent = m.error; return; }
     const k = m.metricas;
+    const porcentaje = new Intl.NumberFormat("es-BO", { style: "percent", maximumFractionDigits: 1 });
+    const r2 = new Intl.NumberFormat("es-BO", { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+    const pesoMae = m.prueba.media_mensual > 0
+      ? `, cerca del ${fmt(k.mae / m.prueba.media_mensual * 100)} % de la recolección mensual media de prueba`
+      : "";
+    const diferenciaRmse = k.rmse > k.mae
+      ? " Su diferencia frente al MAE indica que la magnitud del error varió entre meses."
+      : "";
     $("#nombreModelo").textContent = m.modelo;
     $("#kpisModelo").innerHTML = [
-      [fmt(k.mae) + " t", "MAE de prueba"],
-      [fmt(k.rmse) + " t", "RMSE de prueba"],
-      [k.r2.toFixed(3), "R² de prueba"],
-      [fmt(m.entrenamiento.filas), "Filas de entrenamiento"],
-    ].map(([a, b]) => `<div class="kpi"><b>${a}</b><span>${b}</span></div>`).join("");
+      [fmt(k.mae) + " t", "MAE de prueba",
+        `Error absoluto medio en los meses de prueba. La predicción se apartó en promedio ${fmt(k.mae)} t del valor observado${pesoMae}.`],
+      [fmt(k.rmse) + " t", "RMSE de prueba",
+        "Raíz del error cuadrático medio. Da más peso a los desvíos grandes." + diferenciaRmse],
+      [r2.format(k.r2), "R² de prueba",
+        k.r2 >= 0
+          ? `El modelo explica el ${porcentaje.format(k.r2)} de la variabilidad en los meses de prueba. El MAE y el RMSE expresan los errores en toneladas.`
+          : "El error cuadrático supera al de predecir la media de los meses de prueba."],
+      [fmt(m.entrenamiento.filas), "Filas de entrenamiento",
+        "Registros ciudad-mes usados para ajustar el modelo desplegado. Este conteo dimensiona el conjunto de entrenamiento. Las métricas de prueba indican el desempeño."],
+    ].map(tarjetaKpi).join("");
     $("#notaModelo").textContent = `Prueba desde ${m.prueba.desde} · ${fmt(m.prueba.filas)} registros de prueba · Datos hasta ${m.entrenamiento.hasta}`;
     $("#tablaModelos").innerHTML = `<table class="tabla-datos">${cabeceraTabla(["Modelo", "Objetivo", "MAE", "RMSE", "R²"], [2, 3, 4])}<tbody>` +
       m.modelos.map((x) => `<tr><th scope="row">${x.nombre}</th><td>${x.objetivo}</td><td class="numero">${fmt(x.mae)}</td><td class="numero">${fmt(x.rmse)}</td><td class="numero">${x.r2.toFixed(3)}</td></tr>`).join("") + "</tbody></table>";
@@ -282,9 +298,32 @@ const paginas = {
       estado.textContent = p.error;
       return;
     }
-    const clase = (nombre) => nombre === "En expansión" ? "perfil-expansion" : (nombre === "Volumen alto estable" ? "perfil-alto" : "perfil-bajo");
+    const grupos = {
+      "En expansión": {
+        clase: "perfil-expansion", letra: "E",
+        descripcion: "Crecimiento muy alto del promedio mensual, con volumen bajo y variabilidad contenida.",
+      },
+      "Volumen bajo estable": {
+        clase: "perfil-bajo", letra: "B",
+        descripcion: "Volumen mensual bajo y crecimiento moderado, con mayor variación entre meses.",
+      },
+      "Volumen alto estable": {
+        clase: "perfil-alto", letra: "A",
+        descripcion: "Volumen mensual alto y crecimiento moderado, con variación entre meses contenida.",
+      },
+    };
+    const porcentaje = new Intl.NumberFormat("es-BO", { style: "percent", maximumFractionDigits: 1 });
+    const cambio = new Intl.NumberFormat("es-BO", { style: "percent", maximumFractionDigits: 1, signDisplay: "exceptZero" });
     $("#gruposPerfil").innerHTML = p.grupos.map((g) =>
-      `<div class="kpi ${clase(g.nombre)}"><b>${g.nombre}</b><span>${fmt(g.toneladas_medias)} t de media · CV ${g.cv} · crecimiento ${(g.crecimiento * 100).toFixed(1)} %</span></div>`).join("");
+      `<article class="kpi perfil-grupo ${grupos[g.nombre].clase}">
+        <h3 class="titulo-tarjeta">${g.nombre}</h3>
+        <p class="perfil-promedio"><strong class="kpi-valor">${fmt(g.toneladas_medias)} t</strong> <span>media mensual</span></p>
+        <dl class="perfil-metricas">
+          <div><dt>CV</dt><dd>${porcentaje.format(g.cv)}</dd></div>
+          <div><dt>Crecimiento</dt><dd>${cambio.format(g.crecimiento)}</dd></div>
+        </dl>
+        <p class="perfil-descripcion">${grupos[g.nombre].descripcion}</p>
+      </article>`).join("");
     if (typeof Chart !== "undefined") dibujar("planoPerfiles", {
       type: "scatter",
       data: { datasets: p.grupos.map((g, i) => ({
@@ -312,29 +351,24 @@ const paginas = {
       p.ciudades.map((c) => `<tr><th scope="row">${c}</th>${p.anios.map((a) => {
         const x = por.get(c + "|" + a);
         if (!x) return "<td></td>";
-        return `<td class="${clase(x.perfil)}" title="${c} ${a}: ${fmt(x.toneladas)} t, CV ${x.cv}, crecimiento ${(x.crecimiento * 100).toFixed(1)} %">${x.perfil === "En expansión" ? "E" : (x.perfil === "Volumen alto estable" ? "A" : "B")}</td>`;
+        const grupo = grupos[x.perfil];
+        return `<td class="${grupo.clase}" title="${c} ${a}: ${fmt(x.toneladas)} t, CV ${porcentaje.format(x.cv)}, crecimiento ${cambio.format(x.crecimiento)}">${grupo.letra}</td>`;
       }).join("")}</tr>`).join("") + "</tbody></table>";
     if (!p.filas.length) {
       estado.textContent = "No hay años con perfiles disponibles.";
       return;
     }
     const ciudad = $("#ciudadPerfil"), anio = $("#anioPerfil"), ficha = $("#fichaPerfil");
-    const grupos = {
-      "En expansión": "El grupo se caracteriza por un mayor crecimiento del promedio mensual de recolección.",
-      "Volumen alto estable": "El grupo reúne registros con un promedio mensual alto y un crecimiento moderado según su perfil.",
-      "Volumen bajo estable": "El grupo reúne registros con un promedio mensual bajo y un crecimiento moderado según su perfil.",
-    };
-    const porcentaje = new Intl.NumberFormat("es-BO", { style: "percent", maximumFractionDigits: 1 });
-    const cambio = new Intl.NumberFormat("es-BO", { style: "percent", maximumFractionDigits: 1, signDisplay: "exceptZero" });
     const mostrarFicha = () => {
       const fila = por.get(ciudad.value + "|" + anio.value);
+      const grupo = grupos[fila.perfil];
       $("#periodoPerfil").textContent = fila.ciudad + " · " + fila.anio;
       $("#grupoDetallePerfil").textContent = fila.perfil;
-      $("#descripcionPerfil").textContent = grupos[fila.perfil];
+      $("#descripcionPerfil").textContent = grupo.descripcion;
       $("#mediaPerfil").textContent = fmt(fila.toneladas) + " t";
       $("#variabilidadPerfil").textContent = porcentaje.format(fila.cv);
       $("#crecimientoPerfil").textContent = cambio.format(fila.crecimiento);
-      ficha.dataset.grupo = clase(fila.perfil);
+      ficha.dataset.grupo = grupo.clase;
       ficha.hidden = false;
     };
     const actualizarAnios = () => {
@@ -564,8 +598,6 @@ Object.assign(paginas, {
         : "<p class='nota'>Sin meses atípicos.</p>";
     };
     $("#ciudad").addEventListener("change", run); run();
-    const k = await get("/api/correlacion");
-    $("#corr").innerHTML = tablaCalor(["Ciudad", ...k.ciudades], k.ciudades.map((c, i) => [c, k.valores[i]]), (v) => v == null ? "<td></td>" : `<td style="background:rgba(15,92,110,${Math.max(0, v).toFixed(2)});color:${v > .5 ? "#fff" : "#14232b"}">${v}</td>`);
   },
   async simulador() {
     const datos = await get("/api/composicion").catch(() => null);
@@ -786,7 +818,7 @@ Object.assign(paginas, {
       const kpis = [[fmt(ult) + " t", `Recolectado en ${s.x.at(-1)}`]];
       if (prev > 0) kpis.push([((ult / prev - 1) * 100).toFixed(1) + " %", `Variación vs ${s.x.at(-2)}`]);
       kpis.push([fmt(max) + " t", `Máximo histórico (${s.x[imax]})`]);
-      $("#kpisC").innerHTML = kpis.map(([a, b]) => `<div class="kpi"><b>${a}</b><span>${b}</span></div>`).join("");
+      $("#kpisC").innerHTML = kpis.map(tarjetaKpi).join("");
       const omitidos = s.omitidos?.length ? ` Años omitidos por tener menos de 12 meses de registro: ${s.omitidos.join(", ")}.` : "";
       $("#resumenSerie").textContent = `Hay ${s.x.length} años con registro completo entre ${s.x[0]} y ${s.x.at(-1)}. En el primero se recolectaron ${fmt(s.y[0])} t y en el último, ${fmt(ult)} t.${omitidos}`;
       dibujar("rSerie", { type: "bar", data: { labels: s.x, datasets: [{ label: c + " (t)", data: s.y, backgroundColor: COLORES[0] }] }, options: { scales: ejes } });

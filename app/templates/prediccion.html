@@ -29,4 +29,24 @@
   <p>El modelo es una regresión lineal entrenada con la serie tratada de cada ciudad y cinco variables: el mes anterior, el mismo mes del año pasado, el promedio de los últimos 3 meses, el promedio de los últimos 12 meses y el tiempo. Para los meses futuros, cada predicción pasa a formar parte de la historia y alimenta la siguiente.</p>
   <p>El error típico es el MAE del período de prueba 2023–2026. La banda usa 1,96 veces el MAE de esa misma prueba. Las cifras son toneladas recolectadas.</p>
 </section>
+<section class="card evidencia" aria-label="Figuras de detección de meses pico">
+  <div class="galeria-graficas">
+    <figure class="grafica grafica-amplia">
+      <img src="{{ url_for('static', filename='img/colab/figura-171-1.png') }}" alt="Dos definiciones de mes pico" width="1389" height="370" loading="lazy">
+      <figcaption><strong>Dos definiciones de mes pico</strong>La gráfica contrasta un umbral histórico por ciudad con uno relativo a sus últimos 12 meses.</figcaption>
+    </figure>
+    <figure class="grafica grafica-amplia">
+      <img src="{{ url_for('static', filename='img/colab/figura-177-1.png') }}" alt="Técnicas de balanceo" width="1910" height="309" loading="lazy">
+      <figcaption><strong>Técnicas de balanceo</strong>Cada matriz cruza la clase real con la predicha para mostrar cuántos picos se detectaron.
+        <a href="{{ url_for('static', filename='img/colab/figura-177-1.png') }}">Ver imagen a tamaño original</a>
+      </figcaption>
+    </figure>
+    <figure class="grafica grafica-amplia">
+      <img src="{{ url_for('static', filename='img/colab/figura-188-1.png') }}" alt="Clasificadores de meses pico" width="1589" height="340" loading="lazy">
+      <figcaption><strong>Clasificadores de meses pico</strong>Las matrices de prueba comparan detecciones y falsas alarmas de los modelos finales del Colab.
+        <a href="{{ url_for('static', filename='img/colab/figura-188-1.png') }}">Ver imagen a tamaño original</a>
+      </figcaption>
+    </figure>
+  </div>
+</section>
 {% endblock %}

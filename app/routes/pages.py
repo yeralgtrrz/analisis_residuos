@@ -1,8 +1,8 @@
-from flask import Blueprint, render_template
+from flask import Blueprint, redirect, render_template, url_for
 
 pages = Blueprint("pages", __name__)
 
-PAGINAS = [("panel", "/", "Panel"), ("comparar", "/comparar", "Comparar"),
+PAGINAS = [("comparar", "/comparar", "Comparar"),
            ("pronostico", "/pronostico", "Pronóstico"), ("prediccion", "/prediccion", "Predicción"),
            ("modelos", "/modelos", "Modelos"), ("perfiles", "/perfiles", "Perfiles"),
            ("mapa", "/mapa", "Mapa"), ("tipos", "/tipos", "Por tipo"),
@@ -15,8 +15,8 @@ def _p(nombre, **kw):
 
 
 @pages.get("/")
-def panel():
-    return _p("panel")
+def inicio():
+    return redirect(url_for("pages.comparar"))
 
 
 @pages.get("/comparar")

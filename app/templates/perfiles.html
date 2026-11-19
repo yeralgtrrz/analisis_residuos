@@ -2,12 +2,14 @@
 {% block contenido %}
 <section class="card">
   <h2>Perfiles de ciudad por año (K-Means, K = 3)</h2>
-  <p class="nota">Cada ciudad-año se agrupa por tamaño (logaritmo de la media), variabilidad (coeficiente de variación) y crecimiento frente al año anterior. El escalado y los grupos se entrenaron con años hasta 2022 y se asignaron también a 2023–2025.</p>
+  <p class="nota">K-Means agrupa cada registro ciudad-año según el logaritmo de su media mensual, su variabilidad y su crecimiento. Los grupos se ajustaron con datos hasta 2022 y se asignaron también a 2023–2025.</p>
   <div id="gruposPerfil" class="kpis"></div>
+  <p class="nota">Cada tarjeta resume los registros ciudad-año del grupo usados en el entrenamiento. La media mensual es el promedio de sus toneladas por mes. El coeficiente de variación (CV) mide la dispersión entre meses y el crecimiento resume los cambios frente al año anterior disponible de cada ciudad.</p>
 </section>
 <section class="card">
   <h2>Mapa de perfiles por año</h2>
   <div id="matrizPerfiles" class="scroll marco-tabla"></div>
+  <p class="nota perfil-leyenda">A = Volumen alto estable · B = Volumen bajo estable · E = En expansión.</p>
   <p class="nota">El color indica el grupo; pasa el cursor por una celda para ver toneladas, variabilidad y crecimiento. Solo se incluyen años con 12 meses de dato.</p>
 </section>
 <section class="card">
@@ -31,9 +33,9 @@
     </div>
     <p id="descripcionPerfil"></p>
     <dl class="kpis perfil-indicadores">
-      <div class="kpi"><dt>Promedio mensual</dt><dd id="mediaPerfil"></dd><dd class="nota">Media de las toneladas recolectadas en los 12 meses del año.</dd></div>
-      <div class="kpi"><dt>Variabilidad mensual</dt><dd id="variabilidadPerfil"></dd><dd class="nota">Desviación estándar dividida entre la media. Un porcentaje mayor indica más variación entre meses.</dd></div>
-      <div class="kpi"><dt>Cambio del promedio</dt><dd id="crecimientoPerfil"></dd><dd class="nota">Variación respecto al promedio del año anterior disponible para el cálculo.</dd></div>
+      <div class="kpi"><dt class="titulo-tarjeta">Promedio mensual</dt><dd id="mediaPerfil"></dd><dd class="nota">Media de las toneladas recolectadas en los 12 meses del año.</dd></div>
+      <div class="kpi"><dt class="titulo-tarjeta">Variabilidad mensual</dt><dd id="variabilidadPerfil"></dd><dd class="nota">Desviación estándar dividida entre la media. Un porcentaje mayor indica más variación entre meses.</dd></div>
+      <div class="kpi"><dt class="titulo-tarjeta">Cambio del promedio</dt><dd id="crecimientoPerfil"></dd><dd class="nota">Variación respecto al promedio del año anterior disponible para el cálculo.</dd></div>
     </dl>
   </div>
   <p id="estadoDetallePerfil" class="nota" role="status">Cargando perfiles…</p>

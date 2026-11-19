@@ -16,7 +16,8 @@
   },
   "prueba": {
     "desde": "2023-01",
-    "filas": 420
+    "filas": 420,
+    "media_mensual": 13431.1512
   },
   "metricas": {
     "mae": 798.1993,

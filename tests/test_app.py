@@ -210,7 +210,9 @@ def test_log_limpieza_completo():
 
 def test_endpoints():
     c = create_app().test_client()
-    for url in ["/", "/comparar", "/pronostico", "/prediccion", "/modelos", "/perfiles", "/calidad",
+    inicio = c.get("/")
+    assert inicio.status_code == 302 and inicio.location == "/comparar"
+    for url in ["/comparar", "/pronostico", "/prediccion", "/modelos", "/perfiles", "/calidad",
                 "/api/modelos", "/api/perfiles", "/api/alerta",
                 "/api/meta", "/api/kpis", "/api/ranking?anio=2024",
                 "/api/composicion", "/api/heatmap?cat=La Paz", "/api/faltantes",
