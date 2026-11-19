@@ -6,7 +6,6 @@ Aplicación Flask que lee los Excel del INE (recolección de residuos 2005-2026)
 
 ```bash
 python -m venv .venv
-source .venv/bin/activate       # Linux/macOS
 .venv\Scripts\activate          # Windows (PowerShell o CMD)
 pip install -r requirements.txt
 python run.py                    # abre http://localhost:5000
